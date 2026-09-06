@@ -58,10 +58,29 @@ input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent);flex-shri
 .section{display:none}
 .section.active{display:block}
 .empty{color:var(--muted);padding:12px 0}
-.week{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
-.day{border:1px solid var(--line);border-radius:11px;padding:10px;min-height:170px}
-.day strong{display:block}
-.day small{color:var(--muted)}
+.calendarToolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.calendarToolbar h2{margin:0}
+.calendarWeekHeader{display:grid;grid-template-columns:repeat(7,minmax(105px,1fr));gap:8px;margin-top:16px}
+.calendarWeekHeader span{text-align:center;color:var(--muted);font-size:12px;font-weight:700;padding:6px}
+.calendarGrid{display:grid;grid-template-columns:repeat(7,minmax(105px,1fr));gap:8px;margin-top:4px}
+.calendarDay{border:1px solid var(--line);border-radius:11px;padding:9px;min-height:142px;background:#fff;cursor:pointer;transition:.15s}
+.calendarDay:hover{border-color:var(--accent);box-shadow:0 3px 10px #0000000d}
+.calendarDay.outside{opacity:.5;background:#fafafa}
+.calendarDay.today{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.calendarDay.hasData{background:#fbfbff}
+.calendarDayTop{display:flex;align-items:center;justify-content:space-between;gap:5px}
+.calendarDayNumber{font-weight:800}
+.calendarDayEdit{font-size:11px;padding:3px 5px}
+.calendarDay small{color:var(--muted);display:block;margin-top:5px}
+.calendarDay .block{margin-top:7px;padding:5px;font-size:11px;line-height:1.35}
+.calendarAdd{display:block;color:var(--muted);font-size:12px;margin-top:28px;text-align:center}
+.dayEditorGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+.dayEditorField label{display:block;color:var(--muted);font-size:12px;margin-bottom:4px}
+.dayEditorField input{width:100%}
+.dayEditorField.full{grid-column:1/-1}
+.dayEditorActions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:16px}
+.dayEditorActions .danger{margin-left:auto}
+.medEditor{display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:8px 0}
 .block{margin-top:9px;background:#eeeefe;border-left:3px solid var(--accent);padding:6px;border-radius:6px;font-size:12px}
 table{width:100%;border-collapse:collapse}
 th,td{text-align:left;padding:10px;border-bottom:1px solid var(--line)}
@@ -110,7 +129,8 @@ th,td{text-align:left;padding:10px;border-bottom:1px solid var(--line)}
   .nav button::first-letter{font-size:18px}
   .main{margin-left:70px;width:calc(100% - 70px);padding:18px}
   .span3,.span4,.span6,.span8{grid-column:span 12}
-  .week{overflow:auto;grid-template-columns:repeat(7,145px)}
+   .calendarWeekHeader,.calendarGrid{overflow:auto;grid-template-columns:repeat(7,145px)}
+   .dayEditorGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .optRow label{width:90px}
 }
 </style>
@@ -123,7 +143,7 @@ th,td{text-align:left;padding:10px;border-bottom:1px solid var(--line)}
     <button class="active" data-view="today">🏠 Today</button>
     <button data-view="tasks">📋 Tasks</button>
     <button data-view="brain">🧠 Brain Dump</button>
-    <button data-view="week">📅 Week</button>
+     <button data-view="calendar">📅 Calendar</button>
     <button data-view="tracker">📊 Tracker</button>
     <button data-view="experiments">🧪 Experiments</button>
     <button data-view="review">🔄 Review</button>
@@ -232,11 +252,49 @@ th,td{text-align:left;padding:10px;border-bottom:1px solid var(--line)}
     </div>
   </section>
 
-  <section id="week" class="section">
+  <section id="calendar" class="section">
     <div class="card">
-      <h2>📅 Weekly planner <span class="lvl lvl1">L1</span></h2>
-      <div class="week" id="weekGrid"></div>
-      <div style="margin-top:16px" class="muted">Keep the week flexible. Schedule blocks, not every minute.</div>
+      <div class="calendarToolbar">
+        <div class="actions">
+          <button class="btn secondary" onclick="shiftCalendarMonth(-1)" aria-label="Previous month">‹</button>
+          <button class="btn secondary" onclick="goToCalendarToday()">Today</button>
+          <button class="btn secondary" onclick="shiftCalendarMonth(1)" aria-label="Next month">›</button>
+        </div>
+        <h2 id="calendarMonthLabel">📅 Calendar</h2>
+        <button class="btn" onclick="newCalendarDay()">＋ Add day</button>
+      </div>
+      <div class="calendarWeekHeader"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
+      <div class="calendarGrid" id="calendarGrid"></div>
+      <div style="margin-top:16px" class="muted">Select any date to add or edit its daily log. Previous days remain available for correction.</div>
+    </div>
+
+    <div class="card" id="dayEditor" style="display:none;margin-top:16px">
+      <div class="calendarToolbar">
+        <h2 id="dayEditorTitle">Add day</h2>
+        <span id="dayEditorStatus" class="pill"></span>
+      </div>
+      <div class="muted" style="margin-top:6px">Save daily state, activity, cigarettes, and medication for any date.</div>
+      <div class="dayEditorGrid">
+        <div class="dayEditorField"><label for="calendarDate">Date</label><input id="calendarDate" class="input" type="date"></div>
+        <div class="dayEditorField"><label for="calendarEnergy">Energy (1–10)</label><input id="calendarEnergy" class="input" type="number" min="1" max="10"></div>
+        <div class="dayEditorField"><label for="calendarFocus">Focus (1–10)</label><input id="calendarFocus" class="input" type="number" min="1" max="10"></div>
+        <div class="dayEditorField"><label for="calendarMood">Mood (1–10)</label><input id="calendarMood" class="input" type="number" min="1" max="10"></div>
+        <div class="dayEditorField"><label for="calendarStress">Stress (1–10)</label><input id="calendarStress" class="input" type="number" min="1" max="10"></div>
+        <div class="dayEditorField"><label for="calendarSleep">Sleep (hours)</label><input id="calendarSleep" class="input" type="number" min="0" max="24" step=".1"></div>
+        <div class="dayEditorField"><label for="calendarBlocks">Work blocks</label><input id="calendarBlocks" class="input" type="number" min="0" step="1"></div>
+        <div class="dayEditorField"><label for="calendarSmoke">Cigarettes</label><input id="calendarSmoke" class="input" type="number" min="0" step="1"></div>
+        <div class="dayEditorField"><label for="calendarExercise">Exercise (minutes)</label><input id="calendarExercise" class="input" type="number" min="0" step="1"></div>
+        <div class="dayEditorField"><label for="calendarScreenTime">Screen time (hours)</label><input id="calendarScreenTime" class="input" type="number" min="0" step=".1"></div>
+        <div class="dayEditorField"><label for="calendarGaming">Gaming (hours)</label><input id="calendarGaming" class="input" type="number" min="0" step=".1"></div>
+        <div class="dayEditorField"><label for="calendarCaffeine">Caffeine (cups)</label><input id="calendarCaffeine" class="input" type="number" min="0" step=".1"></div>
+        <div class="dayEditorField full"><label>Medication</label><div class="medEditor"><label><input id="calendarVyvanse" type="checkbox"> Vyvanse</label><label><input id="calendarFluoxetine" type="checkbox"> Fluoxetine</label></div></div>
+      </div>
+      <div class="dayEditorActions">
+        <button class="btn" onclick="saveCalendarDay()">Save day</button>
+        <button class="btn secondary" onclick="closeDayEditor()">Cancel</button>
+        <button id="deleteCalendarDayBtn" class="btn danger" onclick="deleteCalendarDay()">Delete day</button>
+      </div>
+      <div class="muted" style="margin-top:10px">Deleting removes the daily log, medication, cigarette timestamps, and review for this date. Tasks scheduled on the date are kept.</div>
     </div>
   </section>
 
@@ -606,7 +664,7 @@ function normalize(obj){
   out.tasks=out.tasks.map(t=>({...t, day:t.day||t.created||todayKeyFallback()}));
   return out;
 }
-function todayKeyFallback(){ return new Date().toISOString().slice(0,10); }
+function todayKeyFallback(){ return dateKey(new Date()); }
 
 const storedData=localStorage.getItem(KEY);
 const legacyData=localStorage.getItem(LEGACY_KEY);
@@ -615,21 +673,33 @@ if(!storedData && legacyData) localStorage.setItem(KEY,JSON.stringify(db));
 
 function save(){ localStorage.setItem(KEY, JSON.stringify(db)); }
 
-function todayKey(){ return new Date().toISOString().slice(0,10); }
-
-function addDaysToKey(key, n){
-  const parts=key.split('-').map(Number);
-  const dt=new Date(parts[0], parts[1]-1, parts[2]);
-  dt.setDate(dt.getDate()+n);
-  const yy=dt.getFullYear();
-  const mm=String(dt.getMonth()+1).padStart(2,'0');
-  const dd=String(dt.getDate()).padStart(2,'0');
+function dateKey(date){
+  const yy=date.getFullYear();
+  const mm=String(date.getMonth()+1).padStart(2,'0');
+  const dd=String(date.getDate()).padStart(2,'0');
   return yy+'-'+mm+'-'+dd;
 }
+function dateFromKey(key){
+  const parts=String(key).split('-').map(Number);
+  return new Date(parts[0], parts[1]-1, parts[2]);
+}
+function isValidDateKey(key){
+  return /^\d{4}-\d{2}-\d{2}$/.test(key) && dateKey(dateFromKey(key))===key;
+}
+function todayKey(){ return dateKey(new Date()); }
 
+function addDaysToKey(key, n){
+  const dt=dateFromKey(key);
+  dt.setDate(dt.getDate()+n);
+  return dateKey(dt);
+}
+
+function createDayRecord(){
+  return {energy:5,focus:5,mood:5,stress:5,sleep:'',blocks:0,smoke:0,exercise:'',screenTime:'',gaming:'',caffeine:''};
+}
 function day(k){
   k=k||todayKey();
-  if(!db.days[k]) db.days[k]={energy:5,focus:5,mood:5,stress:5,sleep:'',blocks:0,smoke:0,exercise:'',screenTime:'',gaming:'',caffeine:''};
+  db.days[k]=Object.assign(createDayRecord(), db.days[k]||{});
   return db.days[k];
 }
 
@@ -719,7 +789,7 @@ function getBig3(){
   return active.slice(0,3);
 }
 function taskAgeDays(t){
-  return Math.floor((new Date(todayKey()) - new Date(t.created))/86400000);
+  return Math.floor((dateFromKey(todayKey()) - dateFromKey(t.created))/86400000);
 }
 
 function renderTasks(){
@@ -837,12 +907,11 @@ function renderMedication(){
 /* ---------- streaks ---------- */
 function computeStreak(predicate){
   let streak=0;
-  let d=new Date();
-  let k=d.toISOString().slice(0,10);
-  if(!predicate(k)){ d.setDate(d.getDate()-1); }
+  let k=todayKey();
+  if(!predicate(k)) k=addDaysToKey(k,-1);
   while(true){
-    k=d.toISOString().slice(0,10);
     if(predicate(k)){ streak++; d.setDate(d.getDate()-1); } else break;
+    k=addDaysToKey(k,-1);
   }
   return streak;
 }
@@ -1071,34 +1140,181 @@ function pauseTimer(){ clearInterval(timerId); timerId=null; }
 function resetTimer(){ clearInterval(timerId); timerId=null; remaining=3000; updateTimerDisplay(); }
 function completeBlock(){ day().blocks=(day().blocks||0)+1; save(); render(); }
 
-/* ---------- weekly planner ---------- */
-function renderWeek(){
-  const base=new Date();
-  const monday=new Date(base);
-  const dayN=(base.getDay()+6)%7;
-  monday.setDate(base.getDate()-dayN);
-  const names=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  document.getElementById('weekGrid').innerHTML = names.map((n,i)=>{
-    const d=new Date(monday); d.setDate(monday.getDate()+i);
-    const k=d.toISOString().slice(0,10);
-    const dd=db.days[k];
-    const tasks=db.tasks.filter(t=>t.day===k);
-    const meds=db.meds[k];
-    let extra='';
-    if(dd){
-      extra += `<div class="block">🚬 ${dd.smoke||0} · 🎯 ${dd.focus}/10 · 😴 ${dd.sleep||'—'}h</div>`;
-      const bits=[];
-      if(db.settings.level2.exercise && dd.exercise!=='') bits.push('🏃 '+dd.exercise+'m');
-      if(db.settings.level2.screenTime && dd.screenTime!=='') bits.push('📱 '+dd.screenTime+'h');
-      if(db.settings.level2.gaming && dd.gaming!=='') bits.push('🎮 '+dd.gaming+'h');
-      if(db.settings.level2.caffeine && dd.caffeine!=='') bits.push('☕ '+dd.caffeine);
-      if(bits.length) extra += `<div class="block">${bits.join(' · ')}</div>`;
+/* ---------- calendar ---------- */
+let calendarCursorKey=todayKey();
+let calendarEditingKey=null;
+
+function hasDayLog(key){
+  return Object.prototype.hasOwnProperty.call(db.days,key)
+    || Object.prototype.hasOwnProperty.call(db.meds,key)
+    || Object.prototype.hasOwnProperty.call(db.smokeLogs,key)
+    || Object.prototype.hasOwnProperty.call(db.reviews,key);
+}
+function hasCalendarActivity(key){
+  return hasDayLog(key) || db.tasks.some(t=>t.day===key);
+}
+function hasMedicationLogged(record){
+  return !!(record && MEDICATIONS.some(med=>record[med.key]));
+}
+function shiftCalendarMonth(amount){
+  const cursor=dateFromKey(calendarCursorKey);
+  cursor.setDate(1);
+  cursor.setMonth(cursor.getMonth()+amount);
+  calendarCursorKey=dateKey(cursor);
+  renderCalendar();
+}
+function goToCalendarToday(){
+  calendarCursorKey=todayKey();
+  renderCalendar();
+}
+function newCalendarDay(){ openDayEditor(todayKey()); }
+
+function openDayEditor(key){
+  if(!isValidDateKey(key)) return;
+  calendarCursorKey=key;
+  const existing=hasDayLog(key);
+  calendarEditingKey=existing ? key : null;
+  const record=Object.assign(createDayRecord(),db.days[key]||{});
+  const meds=Object.assign(createMedicationRecord(),db.meds[key]||{});
+  document.getElementById('calendarDate').value=key;
+  document.getElementById('calendarDate').disabled=existing;
+  document.getElementById('calendarEnergy').value=record.energy;
+  document.getElementById('calendarFocus').value=record.focus;
+  document.getElementById('calendarMood').value=record.mood;
+  document.getElementById('calendarStress').value=record.stress;
+  document.getElementById('calendarSleep').value=record.sleep===''?'':record.sleep;
+  document.getElementById('calendarBlocks').value=record.blocks||0;
+  document.getElementById('calendarSmoke').value=record.smoke||0;
+  document.getElementById('calendarExercise').value=record.exercise===''?'':record.exercise;
+  document.getElementById('calendarScreenTime').value=record.screenTime===''?'':record.screenTime;
+  document.getElementById('calendarGaming').value=record.gaming===''?'':record.gaming;
+  document.getElementById('calendarCaffeine').value=record.caffeine===''?'':record.caffeine;
+  document.getElementById('calendarVyvanse').checked=!!meds.vyvanse;
+  document.getElementById('calendarFluoxetine').checked=!!meds.fluoxetine;
+  document.getElementById('dayEditorTitle').textContent=(existing?'Edit ':'Add ')+key;
+  document.getElementById('dayEditorStatus').textContent=existing?'Saved log':'New log';
+  document.getElementById('deleteCalendarDayBtn').style.display=existing?'':'none';
+  document.getElementById('dayEditor').style.display='block';
+  renderCalendar();
+  document.getElementById('dayEditor').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function closeDayEditor(){
+  calendarEditingKey=null;
+  document.getElementById('dayEditor').style.display='none';
+}
+function calendarNumber(id,fallback,min,max,integer){
+  const raw=document.getElementById(id).value;
+  if(raw==='') return fallback;
+  const n=Number(raw);
+  if(!Number.isFinite(n)) return fallback;
+  const bounded=Math.min(max,Math.max(min,n));
+  return integer ? Math.round(bounded) : bounded;
+}
+function calendarOptionalNumber(id){
+  const raw=document.getElementById(id).value;
+  if(raw==='') return '';
+  const n=Number(raw);
+  return Number.isFinite(n) ? Math.max(0,n) : '';
+}
+function saveCalendarDay(){
+  const key=document.getElementById('calendarDate').value;
+  if(!isValidDateKey(key)){ toast('Choose a valid date first'); return; }
+  const record=createDayRecord();
+  record.energy=calendarNumber('calendarEnergy',5,1,10,true);
+  record.focus=calendarNumber('calendarFocus',5,1,10,true);
+  record.mood=calendarNumber('calendarMood',5,1,10,true);
+  record.stress=calendarNumber('calendarStress',5,1,10,true);
+  record.sleep=calendarOptionalNumber('calendarSleep');
+  record.blocks=calendarNumber('calendarBlocks',0,0,9999,true);
+  record.smoke=calendarNumber('calendarSmoke',0,0,9999,true);
+  record.exercise=calendarOptionalNumber('calendarExercise');
+  record.screenTime=calendarOptionalNumber('calendarScreenTime');
+  record.gaming=calendarOptionalNumber('calendarGaming');
+  record.caffeine=calendarOptionalNumber('calendarCaffeine');
+  db.days[key]=record;
+
+  const meds=createMedicationRecord();
+  meds.vyvanse=document.getElementById('calendarVyvanse').checked;
+  meds.fluoxetine=document.getElementById('calendarFluoxetine').checked;
+  if(hasMedicationLogged(meds)) db.meds[key]=meds; else delete db.meds[key];
+
+  const oldLogs=Array.isArray(db.smokeLogs[key]) ? db.smokeLogs[key].slice(0,record.smoke) : [];
+  if(record.smoke){
+    while(oldLogs.length<record.smoke) oldLogs.push('manual');
+    db.smokeLogs[key]=oldLogs;
+  } else delete db.smokeLogs[key];
+
+  calendarEditingKey=key;
+  calendarCursorKey=key;
+  save();
+  render();
+  openDayEditor(key);
+  toast('Day saved');
+}
+function deleteCalendarDay(){
+  const key=calendarEditingKey || document.getElementById('calendarDate').value;
+  if(!isValidDateKey(key) || !hasDayLog(key)){ closeDayEditor(); toast('No saved log for this date'); return; }
+  if(!confirm('Delete the daily log for '+key+'? Tasks scheduled on this date will be kept.')) return;
+  const removed={};
+  ['days','meds','smokeLogs','reviews'].forEach(collection=>{
+    if(Object.prototype.hasOwnProperty.call(db[collection],key)){
+      removed[collection]=db[collection][key];
+      delete db[collection][key];
     }
-    if(db.settings.level2.medication && meds) extra += `<div class="block">💊 ${MEDICATIONS.map(med=>med.label.charAt(0)+' '+(meds[med.key]?'✓':'—')).join(' · ')}</div>`;
-    return `<div class="day">
-      <strong>${n}</strong><small>${d.getDate()}/${d.getMonth()+1}</small>
-      ${tasks.length ? tasks.map(t=>`<div class="block">${t.done?'☑':'☐'} ${esc(t.text)}</div>`).join('') : '<div class="empty">No tasks</div>'}
-      ${extra}
+  });
+  calendarEditingKey=null;
+  closeDayEditor();
+  save();
+  render();
+  toast('Day deleted',()=>{
+    Object.keys(removed).forEach(collection=>{ db[collection][key]=removed[collection]; });
+    calendarCursorKey=key;
+    save();
+    render();
+    openDayEditor(key);
+  });
+}
+function renderCalendar(){
+  const cursor=dateFromKey(calendarCursorKey);
+  const year=cursor.getFullYear();
+  const month=cursor.getMonth();
+  const first=new Date(year,month,1);
+  const offset=(first.getDay()+6)%7;
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const cellCount=offset+daysInMonth>35?42:35;
+  const gridStart=new Date(year,month,1-offset);
+  const today=todayKey();
+  document.getElementById('calendarMonthLabel').textContent='📅 '+cursor.toLocaleDateString(undefined,{year:'numeric',month:'long'});
+  document.getElementById('calendarGrid').innerHTML=Array.from({length:cellCount},(_,i)=>{
+    const current=new Date(gridStart);
+    current.setDate(gridStart.getDate()+i);
+    const key=dateKey(current);
+    const inMonth=current.getMonth()===month;
+    const record=db.days[key];
+    const meds=db.meds[key];
+    const tasks=db.tasks.filter(t=>t.day===key);
+    const hasActivity=hasCalendarActivity(key);
+    const classes=['calendarDay',inMonth?'':'outside',key===today?'today':'',hasActivity?'hasData':''].filter(Boolean).join(' ');
+    const details=[];
+    if(record){
+      const stateBits=['🎯 '+(record.focus??5)+'/10','🚬 '+(record.smoke||0)];
+      if(record.sleep!=='' && record.sleep!=null) stateBits.push('😴 '+record.sleep+'h');
+      details.push(`<div class="block">${esc(stateBits.join(' · '))}</div>`);
+      const optionalBits=[];
+      if(record.exercise!=='') optionalBits.push('🏃 '+record.exercise+'m');
+      if(record.screenTime!=='') optionalBits.push('📱 '+record.screenTime+'h');
+      if(record.gaming!=='') optionalBits.push('🎮 '+record.gaming+'h');
+      if(record.caffeine!=='') optionalBits.push('☕ '+record.caffeine);
+      if(optionalBits.length) details.push(`<div class="block">${esc(optionalBits.join(' · '))}</div>`);
+    }
+    tasks.slice(0,2).forEach(task=>details.push(`<div class="block">${task.done?'☑':'☐'} ${esc(task.text)}</div>`));
+    if(tasks.length>2) details.push(`<small>+${tasks.length-2} more task${tasks.length-2===1?'':'s'}</small>`);
+    if(hasMedicationLogged(meds)) details.push('<div class="block">💊 Medication logged</div>');
+    const editButton=(inMonth||hasActivity) ? `<button class="btn ghost calendarDayEdit" onclick="event.stopPropagation();openDayEditor('${key}')">${hasDayLog(key)?'Edit':'Add'}</button>` : '';
+    return `<div class="${classes}" onclick="openDayEditor('${key}')" role="button" tabindex="0" aria-label="${key}">
+      <div class="calendarDayTop"><span class="calendarDayNumber">${current.getDate()}</span>${editButton}</div>
+      <small>${key}</small>
+      ${details.join('') || '<span class="calendarAdd">＋ Add log</span>'}
     </div>`;
   }).join('');
 }
@@ -1406,7 +1622,7 @@ function render(){
 
   renderTasks();
   renderBrainDump();
-  renderWeek();
+   renderCalendar();
   renderTracker();
   renderReview();
   renderMedication();

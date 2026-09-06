@@ -10,7 +10,7 @@ A cute, local-first ADHD planning app that helps you track tasks, energy, medica
 - 🧠 **Brain Dump** for random thoughts
 - 📊 **Weekly Analytics** with insights
 - 🧪 **Experiments** tracker (14-day auto-review)
-- 📅 **Week Planner** with full edit/delete for past days
+- 📅 **Calendar** with add/edit/delete for daily logs, including past days
 - 🔐 **Google sign-in** with OAuth 2.0 / OpenID Connect
 - ⏱️ **Deep Work Timer** (50-min Pomodoro sprint)
 - 🔔 **Browser Notifications** for reminders
@@ -20,7 +20,7 @@ A cute, local-first ADHD planning app that helps you track tasks, energy, medica
 
 1. Open `Focusberry.html` in your browser, or host the folder for PWA features
 2. Start logging today's energy, focus, and tasks
-3. Click any day in the week view to edit past days
+3. Open Calendar and select any day to add or edit a daily log; past logs can also be deleted
 4. Configure Google sign-in in Settings, then sign in with your Google account
 
 ## Configure Google OAuth 2.0 / OpenID Connect
