@@ -1,5 +1,5 @@
 const CACHE = 'focusberry-v1';
-const ASSETS = ['./adhd_os.html', './manifest.json'];
+const ASSETS = ['./Focusberry.html', './manifest.json'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)));

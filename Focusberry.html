@@ -162,7 +162,7 @@ th,td{text-align:left;padding:10px;border-bottom:1px solid var(--line)}
       <div class="card span4" id="medCard"><h2>💊 Medication <span class="lvl lvl2">L2</span></h2>
         <div class="row" style="margin-bottom:10px">
           <button class="btn secondary" style="flex:1" onclick="toggleMed('vyvanse')">💊 Vyvanse</button>
-          <button class="btn secondary" style="flex:1" onclick="toggleMed('felositin')">💊 Felositin</button>
+           <button class="btn secondary" style="flex:1" onclick="toggleMed('fluoxetine')">💊 Fluoxetine</button>
         </div>
         <div id="medStatus"></div>
         <div class="muted" style="margin-top:8px">Tap once when you take a capsule. Tapping again removes today's record.</div>
@@ -318,7 +318,7 @@ th,td{text-align:left;padding:10px;border-bottom:1px solid var(--line)}
       <div class="settingsRow"><div><div class="label">☕ Caffeine</div><div class="muted">Cups / servings per day</div></div><label class="switch"><input type="checkbox" id="toggle-caffeine" onchange="toggleLevel2('caffeine')"><span class="slider"></span></label></div>
       <div class="settingsRow"><div><div class="label">🙂 Mood</div><div class="muted">Daily mood slider</div></div><label class="switch"><input type="checkbox" id="toggle-mood" onchange="toggleLevel2('mood')"><span class="slider"></span></label></div>
       <div class="settingsRow"><div><div class="label">😣 Stress</div><div class="muted">Daily stress slider (added alongside mood)</div></div><label class="switch"><input type="checkbox" id="toggle-stress" onchange="toggleLevel2('stress')"><span class="slider"></span></label></div>
-      <div class="settingsRow"><div><div class="label">💊 Medication adherence</div><div class="muted">Vyvanse / Felositin one-click tracking</div></div><label class="switch"><input type="checkbox" id="toggle-medication" onchange="toggleLevel2('medication')"><span class="slider"></span></label></div>
+      <div class="settingsRow"><div><div class="label">💊 Medication adherence</div><div class="muted">Vyvanse / Fluoxetine  one-click tracking</div></div><label class="switch"><input type="checkbox" id="toggle-medication" onchange="toggleLevel2('medication')"><span class="slider"></span></label></div>
     </div>
 
     <div class="card" style="margin-top:16px">
@@ -566,13 +566,35 @@ function defaultDb(){
   };
 }
 
+const MEDICATIONS=[
+  {key:'vyvanse',label:'Vyvanse',icon:'💊'},
+  {key:'fluoxetine',label:'Fluoxetine',icon:'💊'}
+];
+
+function createMedicationRecord(){
+  return MEDICATIONS.reduce((record,med)=>{ record[med.key]=false; return record; },{});
+}
+function normalizeMedicationKeys(meds){
+  Object.keys(meds).forEach(date=>{
+    const record=meds[date]||{};
+    if(record.fluoxetine===undefined){
+      record.fluoxetine=!!(record['Fluoxetine '] ?? record.Fluoxetine);
+    }
+    MEDICATIONS.forEach(med=>{ record[med.key]=!!record[med.key]; });
+    delete record['Fluoxetine '];
+    delete record.Fluoxetine;
+    meds[date]=record;
+  });
+  return meds;
+}
+
 function normalize(obj){
   const base=defaultDb();
   const out=Object.assign({}, base, obj||{});
   out.tasks=Array.isArray(out.tasks)?out.tasks:[];
   out.brainDump=Array.isArray(out.brainDump)?out.brainDump:[];
   out.days=out.days||{};
-  out.meds=out.meds||{};
+  out.meds=normalizeMedicationKeys(out.meds||{});
   out.smokeLogs=out.smokeLogs||{};
   out.reviews=out.reviews||{};
   out.experiments=Array.isArray(out.experiments)?out.experiments:[];
@@ -613,7 +635,7 @@ function day(k){
 
 function medDay(k){
   k=k||todayKey();
-  if(!db.meds[k]) db.meds[k]={vyvanse:false,felositin:false};
+  if(!db.meds[k]) db.meds[k]=createMedicationRecord();
   return db.meds[k];
 }
 
@@ -803,13 +825,13 @@ function toggleMed(name){
 }
 function renderMedication(){
   const m=medDay();
-  const label=(name,icon)=>`
-    <div class="task ${m[name]?'done':''}">
-      <input type="checkbox" ${m[name]?'checked':''} onchange="toggleMed('${name}')">
-      <span class="tasktext">${icon} ${name==='vyvanse'?'Vyvanse':'Felositin'} capsule</span>
-      <span class="pill">${m[name]?'Taken':'Not taken'}</span>
+  const label=med=>`
+    <div class="task ${m[med.key]?'done':''}">
+      <input type="checkbox" ${m[med.key]?'checked':''} onchange="toggleMed('${med.key}')">
+      <span class="tasktext">${med.icon} ${esc(med.label)} capsule</span>
+      <span class="pill">${m[med.key]?'Taken':'Not taken'}</span>
     </div>`;
-  document.getElementById('medStatus').innerHTML = label('vyvanse','💊')+label('felositin','💊');
+  document.getElementById('medStatus').innerHTML = MEDICATIONS.map(label).join('');
 }
 
 /* ---------- streaks ---------- */
@@ -825,7 +847,7 @@ function computeStreak(predicate){
   return streak;
 }
 function renderStreaks(){
-  const medStreak = computeStreak(k=>{ const m=db.meds[k]; return !!(m && m.vyvanse && m.felositin); });
+  const medStreak = computeStreak(k=>{ const m=db.meds[k]; return !!(m && MEDICATIONS.every(med=>m[med.key])); });
   const target = db.settings.smokeTarget || 12;
   const smokeStreak = computeStreak(k=>{ const d=db.days[k]; return d ? (d.smoke||0) <= target : false; });
   document.getElementById('medStreakMetric').textContent = medStreak;
@@ -1072,7 +1094,7 @@ function renderWeek(){
       if(db.settings.level2.caffeine && dd.caffeine!=='') bits.push('☕ '+dd.caffeine);
       if(bits.length) extra += `<div class="block">${bits.join(' · ')}</div>`;
     }
-    if(db.settings.level2.medication && meds) extra += `<div class="block">💊 V ${meds.vyvanse?'✓':'—'} · F ${meds.felositin?'✓':'—'}</div>`;
+    if(db.settings.level2.medication && meds) extra += `<div class="block">💊 ${MEDICATIONS.map(med=>med.label.charAt(0)+' '+(meds[med.key]?'✓':'—')).join(' · ')}</div>`;
     return `<div class="day">
       <strong>${n}</strong><small>${d.getDate()}/${d.getMonth()+1}</small>
       ${tasks.length ? tasks.map(t=>`<div class="block">${t.done?'☑':'☐'} ${esc(t.text)}</div>`).join('') : '<div class="empty">No tasks</div>'}
@@ -1109,8 +1131,8 @@ function renderTracker(){
   if(db.settings.level2.medication){
     medCardT.style.display='';
     document.getElementById('medHistory').innerHTML = `<table>
-      <tr><th>Date</th><th>Vyvanse</th><th>Felositin</th></tr>
-      ${keys.map(k=>{ const m=db.meds[k]||{}; return `<tr><td>${k}</td><td>${m.vyvanse?'✓':'—'}</td><td>${m.felositin?'✓':'—'}</td></tr>`; }).join('')}
+       <tr><th>Date</th>${MEDICATIONS.map(med=>`<th>${esc(med.label)}</th>`).join('')}</tr>
+       ${keys.map(k=>{ const m=db.meds[k]||{}; return `<tr><td>${k}</td>${MEDICATIONS.map(med=>`<td>${m[med.key]?'✓':'—'}</td>`).join('')}</tr>`; }).join('')}
     </table>`;
   } else { medCardT.style.display='none'; }
 
@@ -1307,7 +1329,8 @@ function importV1(){
     const v1=JSON.parse(raw);
     db.tasks=[...db.tasks, ...(v1.tasks||[]).map(t=>({...t, day:t.day||t.created||todayKey()}))];
     Object.assign(db.days, v1.days||{});
-    Object.assign(db.meds, v1.meds||{});
+     Object.assign(db.meds, v1.meds||{});
+     normalizeMedicationKeys(db.meds);
     Object.assign(db.smokeLogs, v1.smokeLogs||{});
     Object.assign(db.reviews, v1.reviews||{});
     save(); render(); toast('Previous data imported');
@@ -1339,15 +1362,15 @@ function applySyncCode(){
 function exportCSV(){
   const dateSet=new Set([...Object.keys(db.days), ...Object.keys(db.meds)]);
   const dates=Array.from(dateSet).sort();
-  const headers=['date','energy','focus','mood','stress','sleep','blocks','smoke','exercise','screenTime','gaming','caffeine','vyvanse','felositin'];
+  const headers=['date','energy','focus','mood','stress','sleep','blocks','smoke','exercise','screenTime','gaming','caffeine',...MEDICATIONS.map(med=>med.key)];
   const rows=[headers.join(',')];
   dates.forEach(k=>{
     const d=db.days[k]||{};
     const m=db.meds[k]||{};
     const row=[k,
       d.energy??'', d.focus??'', d.mood??'', d.stress??'', d.sleep??'', d.blocks??'', d.smoke??'',
-      d.exercise??'', d.screenTime??'', d.gaming??'', d.caffeine??'',
-      m.vyvanse?1:0, m.felositin?1:0
+       d.exercise??'', d.screenTime??'', d.gaming??'', d.caffeine??'',
+       ...MEDICATIONS.map(med=>m[med.key]?1:0)
     ];
     rows.push(row.join(','));
   });
