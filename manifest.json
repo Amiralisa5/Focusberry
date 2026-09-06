@@ -2,7 +2,7 @@
   "name": "Focusberry — ADHD planner",
   "short_name": "Focusberry",
   "description": "A gentle, ADHD-friendly planner for tasks, habits, and daily patterns",
-  "start_url": "./adhd_os.html",
+  "start_url": "./Focusberry.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#11131a",
