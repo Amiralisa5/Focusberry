@@ -1,7 +1,7 @@
 {
-  "name": "ADHD OS",
-  "short_name": "ADHD OS",
-  "description": "ADHD-friendly todo list and habit tracker",
+  "name": "Focusberry — ADHD planner",
+  "short_name": "Focusberry",
+  "description": "A gentle, ADHD-friendly planner for tasks, habits, and daily patterns",
   "start_url": "./adhd_os.html",
   "scope": "./",
   "display": "standalone",
