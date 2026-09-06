@@ -3,12 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ADHD OS v3</title>
+<title>Focusberry — ADHD planner</title>
 <link id="manifestLink" rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#11131a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="ADHD OS">
+<meta name="apple-mobile-web-app-title" content="Focusberry">
+<meta name="google-client-id" content="">
 <style>
 :root{--bg:#f6f7fb;--card:#fff;--text:#171923;--muted:#6b7280;--line:#e5e7eb;--accent:#5b5bd6;--accent2:#7c3aed;--danger:#dc2626;--good:#16a34a;--warn:#d97706;--l1:#4338ca;--l2:#0f766e;--l3:#b45309}
 *{box-sizing:border-box}
@@ -93,6 +94,12 @@ th,td{text-align:left;padding:10px;border-bottom:1px solid var(--line)}
 .insight{padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
 .insight:last-child{border:0}
 .syncBox{width:100%;min-height:90px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;resize:vertical}
+.authPanel{min-width:230px;text-align:right}
+.authSummary{font-weight:650}
+.authProfile{display:flex;align-items:center;justify-content:flex-end;gap:8px}
+.authAvatar{width:30px;height:30px;border-radius:50%;object-fit:cover}
+.googleButton{min-height:40px}
+.authSetup{max-width:620px}
 .focusOverlay{position:fixed;inset:0;background:#11131a;color:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:300;text-align:center;padding:24px}
 .focusOverlay select.input{max-width:420px;margin:14px auto}
 @media(max-width:900px){
@@ -111,7 +118,7 @@ th,td{text-align:left;padding:10px;border-bottom:1px solid var(--line)}
 <body>
 <div class="app">
 <aside class="sidebar">
-  <div class="brand">🧠 ADHD <span>OS</span></div>
+  <div class="brand">🍓 <span>Focusberry</span></div>
   <div class="nav">
     <button class="active" data-view="today">🏠 Today</button>
     <button data-view="tasks">📋 Tasks</button>
@@ -130,8 +137,11 @@ th,td{text-align:left;padding:10px;border-bottom:1px solid var(--line)}
       <div class="date" id="date"></div>
       <div class="muted">Tasks, medication, cigarettes and daily state are saved locally in this browser only.</div>
     </div>
-    <div style="text-align:right">
-      <button class="btn" onclick="brainDump()">＋ Brain dump</button>
+    <div class="authPanel">
+      <div id="authSummary" class="muted">Google sign-in is not configured</div>
+      <div id="googleSignInTop" class="googleButton" style="margin-top:8px"></div>
+      <button id="googleSignOutTop" class="btn secondary" style="display:none;margin-top:8px" onclick="signOutGoogle()">Sign out</button>
+      <div style="margin-top:12px"><button class="btn" onclick="brainDump()">＋ Brain dump</button></div>
       <div class="muted" style="margin-top:6px">Press <b>B</b> anywhere to brain dump</div>
     </div>
   </div>
@@ -273,6 +283,21 @@ th,td{text-align:left;padding:10px;border-bottom:1px solid var(--line)}
 
   <section id="settings" class="section">
     <div class="card">
+      <h2>🔐 Google sign-in</h2>
+      <div id="googleAuthMessage" class="muted" style="margin-bottom:12px">Sign in to attach a Google identity to this browser session. Focusberry data stays local unless you add a backend.</div>
+      <div id="googleProfileDetails" class="authProfile" style="display:none;justify-content:flex-start;margin-bottom:12px">
+        <img id="googleProfilePicture" class="authAvatar" alt="">
+        <div><div id="googleProfileName" class="authSummary"></div><div id="googleProfileEmail" class="muted"></div></div>
+        <button class="btn secondary" style="margin-left:auto" onclick="signOutGoogle()">Sign out</button>
+      </div>
+      <div id="googleSignInButton" class="googleButton"></div>
+      <div class="authSetup" style="margin-top:14px">
+        <div class="muted" style="margin-bottom:6px">Paste your Google OAuth 2.0 <b>Web application</b> client ID. This identifier is public; never paste a client secret here.</div>
+        <div class="row"><input id="googleClientIdInput" class="input" autocomplete="off" placeholder="1234567890-abc.apps.googleusercontent.com"><button class="btn secondary" onclick="saveGoogleClientId()">Save client ID</button></div>
+      </div>
+    </div>
+
+    <div class="card">
       <h2>⚙️ Tracking levels</h2>
       <div class="muted" style="margin-bottom:6px">
         <b>Level 1 — Always on:</b> Tasks, Calendar, Cigarettes, Sleep, Focus/Energy. These never turn off — they're the minimum that keeps the app useful.<br>
@@ -357,8 +382,171 @@ th,td{text-align:left;padding:10px;border-bottom:1px solid var(--line)}
 </div>
 
 <div class="toast" id="toast"></div>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
-const KEY='adhd_os_v2';
+const APP_NAME='Focusberry';
+const KEY='focusberry_v1';
+const LEGACY_KEY='adhd_os_v2';
+const GOOGLE_CLIENT_ID_KEY='focusberry_google_client_id';
+const GOOGLE_PROFILE_KEY='focusberry_google_profile';
+
+function readConfiguredGoogleClientId(){
+  const saved=localStorage.getItem(GOOGLE_CLIENT_ID_KEY);
+  if(saved) return saved.trim();
+  return (document.querySelector('meta[name="google-client-id"]')?.content||'').trim();
+}
+function loadGoogleProfile(){
+  try{
+    const profile=JSON.parse(localStorage.getItem(GOOGLE_PROFILE_KEY)||'null');
+    return profile && profile.sub ? profile : null;
+  }catch(e){ return null; }
+}
+let googleClientId=readConfiguredGoogleClientId();
+let googleProfile=loadGoogleProfile();
+let googleAuthClientId='';
+let googleAuthInitialized=false;
+
+function decodeGoogleCredential(token){
+  try{
+    const encoded=String(token||'').split('.')[1];
+    if(!encoded) return null;
+    const base64=encoded.replace(/-/g,'+').replace(/_/g,'/');
+    const padded=base64+'='.repeat((4-base64.length%4)%4);
+    const bytes=atob(padded);
+    const text=Array.from(bytes,c=>'%'+('00'+c.charCodeAt(0).toString(16)).slice(-2)).join('');
+    return JSON.parse(decodeURIComponent(text));
+  }catch(e){ return null; }
+}
+
+function isValidGooglePayload(payload){
+  if(!payload || !payload.sub || !googleClientId) return false;
+  const issuer=payload.iss==='https://accounts.google.com' || payload.iss==='accounts.google.com';
+  const audience=Array.isArray(payload.aud) ? payload.aud : [payload.aud];
+  const fresh=!payload.exp || payload.exp>Math.floor(Date.now()/1000);
+  return issuer && audience.includes(googleClientId) && fresh;
+}
+
+function renderGoogleAuthUi(){
+  const summary=document.getElementById('authSummary');
+  const message=document.getElementById('googleAuthMessage');
+  const details=document.getElementById('googleProfileDetails');
+  const input=document.getElementById('googleClientIdInput');
+  const signOut=document.getElementById('googleSignOutTop');
+  if(input && document.activeElement!==input) input.value=googleClientId;
+
+  if(googleProfile){
+    const label=googleProfile.name || googleProfile.email || 'Google account';
+    if(summary) summary.textContent='Signed in as '+label;
+    if(message) message.textContent='Google identity connected. Your Focusberry entries remain stored locally in this browser.';
+    if(details){
+      details.style.display='flex';
+      document.getElementById('googleProfileName').textContent=label;
+      document.getElementById('googleProfileEmail').textContent=googleProfile.email || '';
+      const picture=document.getElementById('googleProfilePicture');
+      picture.src=googleProfile.picture || '';
+      picture.style.display=googleProfile.picture ? '' : 'none';
+    }
+    if(signOut) signOut.style.display='';
+  } else if(googleClientId){
+    if(summary) summary.textContent=googleAuthInitialized ? 'Sign in with Google' : 'Loading Google sign-in…';
+    if(message) message.textContent=googleAuthInitialized ? 'Use the button to sign in with Google. No Google token is stored by Focusberry.' : 'Google Identity Services is loading…';
+    if(details) details.style.display='none';
+    if(signOut) signOut.style.display='none';
+  } else {
+    if(summary) summary.textContent='Google sign-in is not configured';
+    if(message) message.textContent='Add a Google OAuth 2.0 Web application client ID below to enable sign-in. Focusberry data stays local unless you add a backend.';
+    if(details) details.style.display='none';
+    if(signOut) signOut.style.display='none';
+  }
+}
+
+function renderGoogleButtons(){
+  const targets=['googleSignInTop','googleSignInButton'].map(id=>document.getElementById(id)).filter(Boolean);
+  targets.forEach(target=>{
+    target.innerHTML='';
+    target.style.display=googleAuthInitialized && !googleProfile ? '' : 'none';
+  });
+  if(!googleAuthInitialized || googleProfile) return;
+  const options={theme:'outline',size:'large',shape:'pill',text:'signin_with',logo_alignment:'left',width:240};
+  targets.forEach(target=>{
+    try{ google.accounts.id.renderButton(target,options); }catch(e){ target.style.display='none'; }
+  });
+}
+
+function initializeGoogleAuth(){
+  googleClientId=readConfiguredGoogleClientId();
+  if(!googleClientId || !window.google?.accounts?.id){
+    googleAuthInitialized=false;
+    renderGoogleAuthUi();
+    renderGoogleButtons();
+    return;
+  }
+  if(googleAuthClientId!==googleClientId || !googleAuthInitialized){
+    google.accounts.id.initialize({
+      client_id:googleClientId,
+      callback:handleGoogleCredential,
+      auto_select:false,
+      cancel_on_tap_outside:true
+    });
+    googleAuthClientId=googleClientId;
+    googleAuthInitialized=true;
+  }
+  renderGoogleAuthUi();
+  renderGoogleButtons();
+}
+
+function waitForGoogleAuth(attempt){
+  if(window.google?.accounts?.id){ initializeGoogleAuth(); return; }
+  if(googleClientId && (attempt||0)<50) setTimeout(()=>waitForGoogleAuth((attempt||0)+1),100);
+}
+
+function saveGoogleClientId(){
+  const input=document.getElementById('googleClientIdInput');
+  const value=(input.value||'').trim();
+  if(!value){ toast('Paste a Google web client ID first'); return; }
+  if(!/^[A-Za-z0-9._-]+\.apps\.googleusercontent\.com$/i.test(value)){
+    toast('That does not look like a Google web client ID');
+    return;
+  }
+  if(value!==googleClientId){
+    googleProfile=null;
+    localStorage.removeItem(GOOGLE_PROFILE_KEY);
+  }
+  localStorage.setItem(GOOGLE_CLIENT_ID_KEY,value);
+  googleClientId=value;
+  initializeGoogleAuth();
+  waitForGoogleAuth(0);
+  toast('Google sign-in configuration saved');
+}
+
+function handleGoogleCredential(response){
+  const payload=decodeGoogleCredential(response && response.credential);
+  if(!isValidGooglePayload(payload)){
+    toast('Google sign-in could not be verified for this client');
+    return;
+  }
+  googleProfile={
+    sub:String(payload.sub),
+    aud:payload.aud,
+    email:typeof payload.email==='string' ? payload.email : '',
+    name:typeof payload.name==='string' ? payload.name : '',
+    picture:typeof payload.picture==='string' && payload.picture.startsWith('https://') ? payload.picture : '',
+    emailVerified:payload.email_verified===true
+  };
+  localStorage.setItem(GOOGLE_PROFILE_KEY,JSON.stringify(googleProfile));
+  renderGoogleAuthUi();
+  renderGoogleButtons();
+  toast('Welcome to Focusberry, '+(googleProfile.name || 'friend')+'!');
+}
+
+function signOutGoogle(){
+  googleProfile=null;
+  localStorage.removeItem(GOOGLE_PROFILE_KEY);
+  if(window.google?.accounts?.id) google.accounts.id.disableAutoSelect();
+  renderGoogleAuthUi();
+  renderGoogleButtons();
+  toast('Signed out of Google');
+}
 
 function defaultDb(){
   return {
@@ -398,7 +586,10 @@ function normalize(obj){
 }
 function todayKeyFallback(){ return new Date().toISOString().slice(0,10); }
 
-let db=normalize(JSON.parse(localStorage.getItem(KEY)||'null'));
+const storedData=localStorage.getItem(KEY);
+const legacyData=localStorage.getItem(LEGACY_KEY);
+let db=normalize(JSON.parse(storedData||legacyData||'null'));
+if(!storedData && legacyData) localStorage.setItem(KEY,JSON.stringify(db));
 
 function save(){ localStorage.setItem(KEY, JSON.stringify(db)); }
 
@@ -1061,11 +1252,11 @@ function checkReminders(){
   const hhmm=now.toTimeString().slice(0,5);
   const k=todayKey();
   if(db.settings.reminders.dailyLogTime===hhmm && notifiedToday[k+'-log']!==true){
-    new Notification('ADHD OS', {body:"Time to log today's state — energy, focus, sleep."});
+    new Notification(APP_NAME, {body:"Time to log today's state — energy, focus, sleep."});
     notifiedToday[k+'-log']=true;
   }
   if(db.settings.level2.medication && db.settings.reminders.medTime===hhmm && notifiedToday[k+'-med']!==true){
-    new Notification('ADHD OS', {body:'Reminder: log your medication for today.'});
+    new Notification(APP_NAME, {body:'Reminder: log your medication for today.'});
     notifiedToday[k+'-med']=true;
   }
 }
@@ -1090,7 +1281,7 @@ function exportData(){
   const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
-  a.href=url; a.download='adhd-os-backup-'+todayKey()+'.json';
+  a.href=url; a.download='focusberry-backup-'+todayKey()+'.json';
   a.click();
   URL.revokeObjectURL(url);
   toast('Backup downloaded');
@@ -1123,7 +1314,7 @@ function importV1(){
   }catch(e){ toast('Could not import previous data'); }
 }
 function resetAll(){
-  if(confirm('This permanently deletes everything stored in this browser for ADHD OS. Continue?')){
+  if(confirm('This permanently deletes everything stored in this browser for Focusberry. Continue?')){
     localStorage.removeItem(KEY);
     db=normalize({});
     save(); render(); toast('All data cleared');
@@ -1163,7 +1354,7 @@ function exportCSV(){
   const blob=new Blob([rows.join('\n')], {type:'text/csv'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
-  a.href=url; a.download='adhd-os-data-'+todayKey()+'.csv';
+  a.href=url; a.download='focusberry-data-'+todayKey()+'.csv';
   a.click();
   URL.revokeObjectURL(url);
   toast('CSV exported');
@@ -1202,6 +1393,7 @@ function render(){
   renderExperiments();
   renderFocus();
   renderSettingsToggles();
+  renderGoogleAuthUi();
   updateTimerDisplay();
 }
 
@@ -1232,6 +1424,7 @@ if('serviceWorker' in navigator){
 }
 
 render();
+waitForGoogleAuth(0);
 </script>
 </body>
 </html>

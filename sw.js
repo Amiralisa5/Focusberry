@@ -1,4 +1,4 @@
-const CACHE = 'adhd-os-v1';
+const CACHE = 'focusberry-v1';
 const ASSETS = ['./adhd_os.html', './manifest.json'];
 
 self.addEventListener('install', (e) => {
