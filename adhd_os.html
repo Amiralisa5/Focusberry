@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ADHD OS v3</title>
+<link id="manifestLink" rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#11131a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ADHD OS">
+<style>
+:root{--bg:#f6f7fb;--card:#fff;--text:#171923;--muted:#6b7280;--line:#e5e7eb;--accent:#5b5bd6;--accent2:#7c3aed;--danger:#dc2626;--good:#16a34a;--warn:#d97706;--l1:#4338ca;--l2:#0f766e;--l3:#b45309}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer;border:0}
+.app{display:flex;min-height:100vh}
+.sidebar{width:235px;background:#11131a;color:#fff;padding:22px 14px;position:fixed;inset:0 auto 0 0;overflow-y:auto}
+.brand{font-size:21px;font-weight:800;padding:8px 10px 22px}
+.brand span{color:#9b8cff}
+.nav button{width:100%;text-align:left;background:transparent;color:#b9bdc9;padding:11px 12px;border-radius:9px;margin:2px 0;font-size:14px}
+.nav button.active,.nav button:hover{background:#242735;color:#fff}
+.main{margin-left:235px;width:calc(100% - 235px);padding:28px;max-width:1450px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:22px;flex-wrap:wrap}
+.top h1{margin:0;font-size:27px}
+.date{color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:18px;box-shadow:0 2px 8px #00000006}
+.span3{grid-column:span 3}.span4{grid-column:span 4}.span6{grid-column:span 6}.span8{grid-column:span 8}.span12{grid-column:span 12}
+.card h2{font-size:16px;margin:0 0 14px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.metric{font-size:30px;font-weight:800}
+.muted{color:var(--muted);font-size:13px}
+.big3{display:flex;flex-direction:column;gap:9px}
+.task{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.task:last-child{border:0}
+.task.done .tasktext{text-decoration:line-through;color:var(--muted)}
+input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent);flex-shrink:0}
+.pill{padding:4px 9px;border-radius:999px;background:#eef2ff;color:#4338ca;font-size:12px;white-space:nowrap}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{background:var(--accent);color:white;padding:9px 13px;border-radius:9px;font-weight:650}
+.btn.secondary{background:#eef0f5;color:#292d39}
+.btn.danger{background:#fee2e2;color:#991b1b}
+.btn.ghost{background:transparent;color:var(--accent);padding:6px 8px}
+.input{width:100%;padding:10px;border:1px solid var(--line);border-radius:9px;background:white;outline:none}
+.input:focus{border-color:var(--accent)}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row>*{flex:1}
+.smoke{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.smokeCount{display:flex;align-items:center;gap:15px}
+.circleBtn{width:38px;height:38px;border-radius:50%;background:#f0f1f5;font-size:22px}
+.circleBtn:hover{background:#e5e7eb}
+.bar{height:8px;background:#edf0f4;border-radius:99px;overflow:hidden;margin-top:10px}
+.bar i{display:block;height:100%;background:var(--accent);width:0}
+.rangeRow{display:grid;grid-template-columns:90px 1fr 30px;align-items:center;gap:8px;margin:9px 0}
+.rangeRow input{width:100%;accent-color:var(--accent)}
+.section{display:none}
+.section.active{display:block}
+.empty{color:var(--muted);padding:12px 0}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+.day{border:1px solid var(--line);border-radius:11px;padding:10px;min-height:170px}
+.day strong{display:block}
+.day small{color:var(--muted)}
+.block{margin-top:9px;background:#eeeefe;border-left:3px solid var(--accent);padding:6px;border-radius:6px;font-size:12px}
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:10px;border-bottom:1px solid var(--line)}
+.chart{height:190px;display:flex;align-items:end;gap:8px;padding-top:10px}
+.col{flex:1;text-align:center}
+.col i{display:block;background:var(--accent);border-radius:5px 5px 0 0;min-height:3px}
+.col span{display:block;font-size:11px;color:var(--muted);margin-top:5px}
+.toast{position:fixed;right:20px;bottom:20px;background:#171923;color:#fff;padding:11px 15px;border-radius:10px;display:none;z-index:250;max-width:340px}
+.lvl{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:999px;letter-spacing:.2px}
+.lvl1{background:#eef2ff;color:var(--l1)}
+.lvl2{background:#ecfdf5;color:var(--l2)}
+.lvl3{background:#fffbeb;color:var(--l3);border:1px dashed var(--l3)}
+.settingsRow{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-bottom:1px solid var(--line)}
+.settingsRow:last-child{border:0}
+.settingsRow .label{font-weight:650}
+.switch{position:relative;width:42px;height:24px;flex-shrink:0}
+.switch input{opacity:0;width:0;height:0;position:absolute}
+.slider{position:absolute;cursor:pointer;inset:0;background:#d1d5db;border-radius:999px;transition:.15s}
+.slider:before{content:"";position:absolute;height:18px;width:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.15s}
+.switch input:checked+.slider{background:var(--accent)}
+.switch input:checked+.slider:before{transform:translateX(18px)}
+.optRow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.optRow:last-child{border:0}
+.optRow label{width:110px;flex-shrink:0;color:var(--muted);font-size:13px}
+.expCard{border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:10px}
+.expCard .expTop{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.reviewBanner{background:#fffbeb;border:1px dashed var(--l3);border-radius:9px;padding:10px;margin-top:10px;font-size:13px}
+.brainItem{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.brainItem:last-child{border:0}
+.insight{padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
+.insight:last-child{border:0}
+.syncBox{width:100%;min-height:90px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;resize:vertical}
+.focusOverlay{position:fixed;inset:0;background:#11131a;color:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:300;text-align:center;padding:24px}
+.focusOverlay select.input{max-width:420px;margin:14px auto}
+@media(max-width:900px){
+  .sidebar{width:70px}
+  .brand{font-size:0}
+  .brand span{font-size:20px}
+  .nav button{font-size:0;text-align:center}
+  .nav button::first-letter{font-size:18px}
+  .main{margin-left:70px;width:calc(100% - 70px);padding:18px}
+  .span3,.span4,.span6,.span8{grid-column:span 12}
+  .week{overflow:auto;grid-template-columns:repeat(7,145px)}
+  .optRow label{width:90px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+  <div class="brand">🧠 ADHD <span>OS</span></div>
+  <div class="nav">
+    <button class="active" data-view="today">🏠 Today</button>
+    <button data-view="tasks">📋 Tasks</button>
+    <button data-view="brain">🧠 Brain Dump</button>
+    <button data-view="week">📅 Week</button>
+    <button data-view="tracker">📊 Tracker</button>
+    <button data-view="experiments">🧪 Experiments</button>
+    <button data-view="review">🔄 Review</button>
+    <button data-view="settings">⚙️ Settings</button>
+  </div>
+</aside>
+<main class="main">
+  <div class="top">
+    <div>
+      <h1 id="title">Today</h1>
+      <div class="date" id="date"></div>
+      <div class="muted">Tasks, medication, cigarettes and daily state are saved locally in this browser only.</div>
+    </div>
+    <div style="text-align:right">
+      <button class="btn" onclick="brainDump()">＋ Brain dump</button>
+      <div class="muted" style="margin-top:6px">Press <b>B</b> anywhere to brain dump</div>
+    </div>
+  </div>
+
+  <section id="today" class="section active">
+    <div class="grid">
+      <div class="card span3"><h2>⚡ Energy <span class="lvl lvl1">L1</span></h2><div class="metric" id="energyMetric">5/10</div><div class="muted">How much capacity do you have?</div></div>
+      <div class="card span3"><h2>🎯 Focus <span class="lvl lvl1">L1</span></h2><div class="metric" id="focusMetric">5/10</div><div class="muted">Current ability to concentrate</div></div>
+      <div class="card span3"><h2>😴 Sleep <span class="lvl lvl1">L1</span></h2><div class="metric" id="sleepMetric">—</div><div class="muted">Hours last night</div></div>
+      <div class="card span3"><h2>🔥 Work blocks</h2><div class="metric" id="blocksMetric">0</div><div class="muted">Completed today</div></div>
+
+      <div class="card span8"><h2>🎯 Today's Big 3 <span class="lvl lvl1">L1</span></h2>
+        <div id="big3" class="big3"></div>
+        <div class="row" style="margin-top:12px"><input id="quickTask" class="input" placeholder="Add one important task…" onkeydown="if(event.key==='Enter') addTaskFromInput()"><button class="btn" onclick="addTaskFromInput()">Add</button></div>
+        <div class="muted" style="margin-top:8px">Pin up to 3 tasks from the Master List to control exactly what shows up here.</div>
+      </div>
+
+      <div class="card span4" id="medCard"><h2>💊 Medication <span class="lvl lvl2">L2</span></h2>
+        <div class="row" style="margin-bottom:10px">
+          <button class="btn secondary" style="flex:1" onclick="toggleMed('vyvanse')">💊 Vyvanse</button>
+          <button class="btn secondary" style="flex:1" onclick="toggleMed('felositin')">💊 Felositin</button>
+        </div>
+        <div id="medStatus"></div>
+        <div class="muted" style="margin-top:8px">Tap once when you take a capsule. Tapping again removes today's record.</div>
+      </div>
+
+      <div class="card span4"><h2>🚬 Cigarettes <span class="lvl lvl1">L1</span></h2>
+        <div class="smoke"><div class="smokeCount"><button class="circleBtn" onclick="changeSmoke(-1)">−</button><div><div class="metric" id="smokeCount">0</div><div class="muted">today</div></div><button class="circleBtn" onclick="changeSmoke(1)">+</button></div></div>
+        <div class="bar"><i id="smokeBar"></i></div>
+        <div class="muted" style="margin-top:7px">Target: <span id="smokeTargetText">12</span>/day</div>
+        <button class="btn secondary" style="margin-top:12px;width:100%" onclick="changeSmoke(1)">🚬 +1 cigarette (timestamped)</button>
+      </div>
+
+      <div class="card span4" id="streaksCard"><h2>🔥 Streaks</h2>
+        <div class="row">
+          <div id="medStreakWrap"><div class="metric" id="medStreakMetric">0</div><div class="muted">days medication logged</div></div>
+          <div id="smokeStreakWrap"><div class="metric" id="smokeStreakMetric">0</div><div class="muted">days under target</div></div>
+        </div>
+      </div>
+
+      <div class="card span6"><h2>🧠 Daily state</h2>
+        <div class="rangeRow"><span>Energy <span class="lvl lvl1" style="font-size:9px">L1</span></span><input id="energy" type="range" min="1" max="10" value="5" oninput="liveSlider('energy')" onchange="render()"><b id="energyVal">5</b></div>
+        <div class="rangeRow"><span>Focus <span class="lvl lvl1" style="font-size:9px">L1</span></span><input id="focus" type="range" min="1" max="10" value="5" oninput="liveSlider('focus')" onchange="render()"><b id="focusVal">5</b></div>
+        <div class="rangeRow" id="sliderRow-mood"><span>Mood <span class="lvl lvl2" style="font-size:9px">L2</span></span><input id="mood" type="range" min="1" max="10" value="5" oninput="liveSlider('mood')" onchange="render()"><b id="moodVal">5</b></div>
+        <div class="rangeRow" id="sliderRow-stress"><span>Stress <span class="lvl lvl2" style="font-size:9px">L2</span></span><input id="stress" type="range" min="1" max="10" value="5" oninput="liveSlider('stress')" onchange="render()"><b id="stressVal">5</b></div>
+        <div class="row" style="margin-top:12px"><input id="sleep" class="input" type="number" step=".1" min="0" max="24" placeholder="Sleep hours" onchange="saveState()"><button class="btn" onclick="saveState()">Save</button></div>
+      </div>
+
+      <div class="card span6"><h2>⏱ Deep work</h2><div class="metric" id="timer">50:00</div><div class="muted">Default ADHD work sprint</div>
+        <div class="actions" style="margin-top:12px">
+          <button class="btn" onclick="startTimer()">Start</button>
+          <button class="btn secondary" onclick="pauseTimer()">Pause</button>
+          <button class="btn secondary" onclick="resetTimer()">Reset</button>
+          <button class="btn secondary" onclick="completeBlock()">✓ Block done</button>
+        </div>
+        <button class="btn" style="margin-top:12px;width:100%" onclick="openFocus()">🎯 Enter focus mode</button>
+      </div>
+
+      <div class="card span6" id="optionalCard"><h2>🧩 Optional trackers <span class="lvl lvl2">L2</span></h2>
+        <div id="optionalToday"></div>
+      </div>
+
+      <div class="card span6" id="expTodayCard"><h2>🧪 Experiments <span class="lvl lvl3">L3</span></h2>
+        <div id="expToday"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tasks" class="section">
+    <div class="card">
+      <h2>📋 Master Task List <span class="lvl lvl1">L1</span></h2>
+      <div class="row">
+        <input id="taskInput" class="input" placeholder="Task…" onkeydown="if(event.key==='Enter') addTask()">
+        <select id="priority" class="input"><option value="high">🔥 High</option><option value="normal">🟡 Normal</option><option value="someday">⚪ Someday</option></select>
+        <button class="btn" onclick="addTask()">Add task</button>
+      </div>
+      <div class="muted" style="margin-top:10px">Each task is stamped with the day it was created. 📍/📌 pins a task into the Big 3 (max 3). ⏭ moves a task to tomorrow. Tasks open for 5+ days get flagged so nothing quietly rots.</div>
+      <div id="taskList" style="margin-top:14px"></div>
+    </div>
+  </section>
+
+  <section id="brain" class="section">
+    <div class="card">
+      <h2>🧠 Brain Dump</h2>
+      <div class="muted" style="margin-bottom:12px">A holding pen for anything on your mind. Nothing here is a commitment — convert it to a task only when you're ready to act on it.</div>
+      <div class="row"><input id="brainInput" class="input" placeholder="What's on your mind…" onkeydown="if(event.key==='Enter') addBrainItem()"><button class="btn" onclick="addBrainItem()">Capture</button></div>
+      <div id="brainList" style="margin-top:14px"></div>
+    </div>
+  </section>
+
+  <section id="week" class="section">
+    <div class="card">
+      <h2>📅 Weekly planner <span class="lvl lvl1">L1</span></h2>
+      <div class="week" id="weekGrid"></div>
+      <div style="margin-top:16px" class="muted">Keep the week flexible. Schedule blocks, not every minute.</div>
+    </div>
+  </section>
+
+  <section id="tracker" class="section"><div class="grid">
+    <div class="card span6"><h2>🚬 Cigarettes — last 7 days <span class="lvl lvl1">L1</span></h2><div id="smokeChart" class="chart"></div></div>
+    <div class="card span6"><h2>🧠 State averages — last 7 days</h2><div id="stateTable"></div></div>
+    <div class="card span12" id="insightsCard"><h2>💡 Insights</h2><div id="insightsList"></div></div>
+    <div class="card span12" id="medHistoryCard"><h2>💊 Medication history — last 7 days <span class="lvl lvl2">L2</span></h2><div id="medHistory"></div></div>
+    <div class="card span12" id="optionalStatsCard"><h2>🧩 Optional trackers — last 7 days <span class="lvl lvl2">L2</span></h2><div id="optionalStats"></div></div>
+    <div class="card span12" id="expStatsCard"><h2>🧪 Experiments summary <span class="lvl lvl3">L3</span></h2><div id="expStats"></div></div>
+    <div class="card span12"><h2>📌 Today's smoke log</h2><div id="smokeLog"></div></div>
+  </div></section>
+
+  <section id="experiments" class="section">
+    <div class="card">
+      <h2>🧪 Experiments <span class="lvl lvl3">Level 3</span></h2>
+      <div class="muted" style="margin-bottom:12px">Anything you're curious about for 1–2 weeks. After 14 days you'll be prompted to keep tracking, snooze for another week, or archive it.</div>
+      <div class="row">
+        <input id="expName" class="input" placeholder="What do you want to track? e.g. Cold shower" onkeydown="if(event.key==='Enter') addExperiment()">
+        <select id="expType" class="input" onchange="document.getElementById('expUnitWrap').style.display=this.value==='number'?'':'none'"><option value="bool">Yes / no</option><option value="number">A number</option></select>
+        <span id="expUnitWrap" style="display:none;flex:1"><input id="expUnit" class="input" placeholder="Unit, e.g. minutes"></span>
+        <button class="btn" onclick="addExperiment()">Add experiment</button>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h2>Active</h2>
+      <div id="expActiveList"></div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h2>Archived</h2>
+      <div id="expArchivedList"></div>
+    </div>
+  </section>
+
+  <section id="review" class="section"><div class="grid">
+    <div class="card span4"><h2>📈 Planned vs completed</h2><div class="metric" id="completionRate">0%</div><div class="muted">completed tasks / total tasks</div></div>
+    <div class="card span4"><h2>🚬 Weekly average</h2><div class="metric" id="weeklySmoke">0</div><div class="muted">cigarettes/day</div></div>
+    <div class="card span4"><h2>🔥 Deep work</h2><div class="metric" id="weeklyBlocks">0</div><div class="muted">blocks this week</div></div>
+    <div class="card span12"><h2>🔄 Weekly review</h2>
+      <div class="row"><textarea id="worked" class="input" rows="5" placeholder="What worked this week?"></textarea><textarea id="didnt" class="input" rows="5" placeholder="What didn't work?"></textarea><textarea id="change" class="input" rows="5" placeholder="Only 3 changes for next week…"></textarea></div>
+      <button class="btn" style="margin-top:10px" onclick="saveReview()">Save review</button>
+    </div>
+  </div></section>
+
+  <section id="settings" class="section">
+    <div class="card">
+      <h2>⚙️ Tracking levels</h2>
+      <div class="muted" style="margin-bottom:6px">
+        <b>Level 1 — Always on:</b> Tasks, Calendar, Cigarettes, Sleep, Focus/Energy. These never turn off — they're the minimum that keeps the app useful.<br>
+        <b>Level 2 — Optional:</b> turn these on only while you actually want to log them. Fewer things to track most days means you'll actually keep doing it.<br>
+        <b>Level 3 — Experimental:</b> anything you're curious about for 1–2 weeks, managed from the Experiments tab.
+      </div>
+      <div class="row" style="margin-top:14px;align-items:center">
+        <div style="flex:2"><b>Cigarette target</b><div class="muted">Used for the daily bar and the "under target" streak</div></div>
+        <input type="number" min="0" id="smokeTargetInput" class="input" style="flex:1" onchange="saveSmokeTarget(this.value)">
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <h2>🧩 Level 2 — Optional trackers</h2>
+      <div class="settingsRow"><div><div class="label">🏃 Exercise</div><div class="muted">Minutes of movement per day</div></div><label class="switch"><input type="checkbox" id="toggle-exercise" onchange="toggleLevel2('exercise')"><span class="slider"></span></label></div>
+      <div class="settingsRow"><div><div class="label">📱 Screen time</div><div class="muted">Hours of screen time per day</div></div><label class="switch"><input type="checkbox" id="toggle-screenTime" onchange="toggleLevel2('screenTime')"><span class="slider"></span></label></div>
+      <div class="settingsRow"><div><div class="label">🎮 Gaming</div><div class="muted">Hours of gaming per day</div></div><label class="switch"><input type="checkbox" id="toggle-gaming" onchange="toggleLevel2('gaming')"><span class="slider"></span></label></div>
+      <div class="settingsRow"><div><div class="label">☕ Caffeine</div><div class="muted">Cups / servings per day</div></div><label class="switch"><input type="checkbox" id="toggle-caffeine" onchange="toggleLevel2('caffeine')"><span class="slider"></span></label></div>
+      <div class="settingsRow"><div><div class="label">🙂 Mood</div><div class="muted">Daily mood slider</div></div><label class="switch"><input type="checkbox" id="toggle-mood" onchange="toggleLevel2('mood')"><span class="slider"></span></label></div>
+      <div class="settingsRow"><div><div class="label">😣 Stress</div><div class="muted">Daily stress slider (added alongside mood)</div></div><label class="switch"><input type="checkbox" id="toggle-stress" onchange="toggleLevel2('stress')"><span class="slider"></span></label></div>
+      <div class="settingsRow"><div><div class="label">💊 Medication adherence</div><div class="muted">Vyvanse / Felositin one-click tracking</div></div><label class="switch"><input type="checkbox" id="toggle-medication" onchange="toggleLevel2('medication')"><span class="slider"></span></label></div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <h2>🔔 Reminders</h2>
+      <div class="muted" style="margin-bottom:12px">Browser notifications only fire while this tab is open — closing it stops them. Real background push on your phone would need this hosted with a push server, which is beyond a single local file.</div>
+      <div class="settingsRow">
+        <div><div class="label">Enable reminders</div><div class="muted">Turns on the checks below</div></div>
+        <label class="switch"><input type="checkbox" id="remindersEnabled" onchange="saveReminderSettings()"><span class="slider"></span></label>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <div>
+          <div class="muted" style="margin-bottom:4px">Daily log reminder</div>
+          <input type="time" id="dailyLogTime" class="input" onchange="saveReminderSettings()">
+        </div>
+        <div>
+          <div class="muted" style="margin-bottom:4px">Medication reminder</div>
+          <input type="time" id="medReminderTime" class="input" onchange="saveReminderSettings()">
+        </div>
+      </div>
+      <button class="btn secondary" style="margin-top:12px" onclick="requestNotifPermission()">Enable browser notifications</button>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <h2>🔗 Manual multi-device sync</h2>
+      <div class="muted" style="margin-bottom:12px">There's no live sync between devices — that needs a backend server. This is a manual, one-way workaround: generate a code on one device, paste and apply it on the other. Applying a code replaces all data on that device.</div>
+      <textarea id="syncCodeBox" class="input syncBox" readonly placeholder="Your sync code will appear here…"></textarea>
+      <button class="btn secondary" style="margin-top:8px" onclick="generateSyncCode()">Generate code from this device</button>
+      <div style="margin-top:16px"></div>
+      <textarea id="syncCodeInput" class="input syncBox" placeholder="Paste a sync code from another device…"></textarea>
+      <button class="btn" style="margin-top:8px" onclick="applySyncCode()">Apply pasted code (overwrites this device)</button>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <h2>💾 Data</h2>
+      <div class="muted" style="margin-bottom:12px">Everything lives only in this browser's local storage. Back it up if you clear your browser data or switch devices.</div>
+      <div class="actions">
+        <button class="btn secondary" onclick="exportData()">⬇ Export backup (.json)</button>
+        <button class="btn secondary" onclick="exportCSV()">⬇ Export data (.csv)</button>
+        <label class="btn secondary" style="display:inline-block">⬆ Import backup<input type="file" accept="application/json" style="display:none" onchange="importData(event)"></label>
+        <button class="btn secondary" id="importV1Btn" style="display:none" onclick="importV1()">Import previous version's data</button>
+        <button class="btn danger" onclick="resetAll()">Reset all data</button>
+      </div>
+      <div class="muted" style="margin-top:12px">Want this installable on your phone with offline support? This file needs to be hosted (GitHub Pages, Netlify, or even <code>python3 -m http.server</code> locally) alongside the <code>manifest.json</code> and <code>sw.js</code> files included with this download — opening it directly from disk can't do real installs; that's a browser security rule, not a bug.</div>
+    </div>
+  </section>
+</main>
+</div>
+
+<div class="focusOverlay" id="focusOverlay">
+  <div class="muted" style="color:#9b8cff;letter-spacing:.3px">FOCUS MODE</div>
+  <select id="focusTaskSelect" class="input" onchange="setFocusTask(this.value)"></select>
+  <div id="focusTaskText" style="font-size:26px;font-weight:700;max-width:600px;margin:10px auto 28px"></div>
+  <div class="metric" id="focusTimer" style="font-size:64px">50:00</div>
+  <div class="actions" style="justify-content:center;margin-top:22px">
+    <button class="btn" onclick="startTimer()">Start</button>
+    <button class="btn secondary" onclick="pauseTimer()">Pause</button>
+    <button class="btn secondary" onclick="resetTimer()">Reset</button>
+    <button class="btn" onclick="completeFocusTask()">✓ Done, next task</button>
+  </div>
+  <button class="btn ghost" style="color:#b9bdc9;margin-top:30px" onclick="closeFocus()">Exit focus mode</button>
+</div>
+
+<div class="toast" id="toast"></div>
+<script>
+const KEY='adhd_os_v2';
+
+function defaultDb(){
+  return {
+    tasks:[],
+    brainDump:[],
+    days:{},
+    meds:{},
+    smokeLogs:{},
+    reviews:{},
+    experiments:[],
+    pinned:[],
+    settings:{
+      level2:{ exercise:true, screenTime:true, gaming:true, caffeine:true, mood:true, stress:true, medication:true },
+      smokeTarget:12,
+      reminders:{ enabled:false, dailyLogTime:'20:00', medTime:'09:00' }
+    }
+  };
+}
+
+function normalize(obj){
+  const base=defaultDb();
+  const out=Object.assign({}, base, obj||{});
+  out.tasks=Array.isArray(out.tasks)?out.tasks:[];
+  out.brainDump=Array.isArray(out.brainDump)?out.brainDump:[];
+  out.days=out.days||{};
+  out.meds=out.meds||{};
+  out.smokeLogs=out.smokeLogs||{};
+  out.reviews=out.reviews||{};
+  out.experiments=Array.isArray(out.experiments)?out.experiments:[];
+  out.pinned=Array.isArray(out.pinned)?out.pinned:[];
+  out.settings=out.settings||{};
+  out.settings.level2=Object.assign({}, base.settings.level2, out.settings.level2||{});
+  out.settings.smokeTarget=out.settings.smokeTarget||12;
+  out.settings.reminders=Object.assign({}, base.settings.reminders, out.settings.reminders||{});
+  out.tasks=out.tasks.map(t=>({...t, day:t.day||t.created||todayKeyFallback()}));
+  return out;
+}
+function todayKeyFallback(){ return new Date().toISOString().slice(0,10); }
+
+let db=normalize(JSON.parse(localStorage.getItem(KEY)||'null'));
+
+function save(){ localStorage.setItem(KEY, JSON.stringify(db)); }
+
+function todayKey(){ return new Date().toISOString().slice(0,10); }
+
+function addDaysToKey(key, n){
+  const parts=key.split('-').map(Number);
+  const dt=new Date(parts[0], parts[1]-1, parts[2]);
+  dt.setDate(dt.getDate()+n);
+  const yy=dt.getFullYear();
+  const mm=String(dt.getMonth()+1).padStart(2,'0');
+  const dd=String(dt.getDate()).padStart(2,'0');
+  return yy+'-'+mm+'-'+dd;
+}
+
+function day(k){
+  k=k||todayKey();
+  if(!db.days[k]) db.days[k]={energy:5,focus:5,mood:5,stress:5,sleep:'',blocks:0,smoke:0,exercise:'',screenTime:'',gaming:'',caffeine:''};
+  return db.days[k];
+}
+
+function medDay(k){
+  k=k||todayKey();
+  if(!db.meds[k]) db.meds[k]={vyvanse:false,felositin:false};
+  return db.meds[k];
+}
+
+let pendingUndo=null;
+function toast(msg, undoFn){
+  const t=document.getElementById('toast');
+  if(undoFn){
+    t.innerHTML = esc(msg) + ' <button class="btn ghost" style="color:#fff;text-decoration:underline;padding:0 0 0 10px" onclick="runUndo()">Undo</button>';
+    pendingUndo=undoFn;
+  } else {
+    t.textContent = msg;
+    pendingUndo=null;
+  }
+  t.style.display='block';
+  clearTimeout(toast._t);
+  toast._t=setTimeout(()=>{ t.style.display='none'; pendingUndo=null; }, undoFn?5000:1600);
+}
+function runUndo(){
+  if(pendingUndo) pendingUndo();
+  document.getElementById('toast').style.display='none';
+  pendingUndo=null;
+}
+
+function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function renderDate(){
+  document.getElementById('date').textContent=new Date().toLocaleDateString(undefined,{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+}
+
+/* ---------- tasks ---------- */
+function addTaskFromInput(){
+  const el=document.getElementById('quickTask');
+  const v=el.value.trim();
+  if(!v) return;
+  const k=todayKey();
+  db.tasks.push({id:Date.now(),text:v,priority:'high',done:false,created:k,day:k});
+  el.value='';
+  save(); render();
+}
+function addTask(){
+  const el=document.getElementById('taskInput');
+  const v=el.value.trim();
+  if(!v) return;
+  const k=todayKey();
+  db.tasks.push({id:Date.now(),text:v,priority:document.getElementById('priority').value,done:false,created:k,day:k});
+  el.value='';
+  save(); render();
+}
+function toggleTask(id){ const t=db.tasks.find(x=>x.id===id); if(t){ t.done=!t.done; save(); render(); } }
+function deleteTask(id){
+  const idx=db.tasks.findIndex(x=>x.id===id);
+  if(idx===-1) return;
+  const removed=db.tasks[idx];
+  db.tasks.splice(idx,1);
+  db.pinned=(db.pinned||[]).filter(pid=>pid!==id);
+  save(); render();
+  toast('Task deleted', ()=>{ db.tasks.splice(idx,0,removed); save(); render(); });
+}
+function rescheduleTask(id,val){
+  const t=db.tasks.find(x=>x.id===id);
+  if(t && val){ t.day=val; save(); render(); toast('Rescheduled to '+val); }
+}
+function snoozeTask(id){
+  const t=db.tasks.find(x=>x.id===id);
+  if(!t) return;
+  t.day=addDaysToKey(t.day||todayKey(), 1);
+  save(); render(); toast('Moved to tomorrow');
+}
+function togglePin(id){
+  db.pinned=db.pinned||[];
+  const idx=db.pinned.indexOf(id);
+  if(idx>-1){ db.pinned.splice(idx,1); save(); render(); return; }
+  if(db.pinned.length>=3){ toast("Big 3 is full — unpin something first"); return; }
+  db.pinned.push(id);
+  save(); render();
+}
+function getBig3(){
+  const active=db.tasks.filter(t=>!t.done);
+  const pinnedTasks=(db.pinned||[]).map(id=>active.find(t=>t.id===id)).filter(Boolean);
+  if(pinnedTasks.length) return pinnedTasks.slice(0,3);
+  return active.slice(0,3);
+}
+function taskAgeDays(t){
+  return Math.floor((new Date(todayKey()) - new Date(t.created))/86400000);
+}
+
+function renderTasks(){
+  const validPins=(db.pinned||[]).filter(id=>db.tasks.some(t=>t.id===id && !t.done));
+  if(validPins.length !== (db.pinned||[]).length){ db.pinned=validPins; save(); }
+
+  const active=db.tasks.filter(t=>!t.done);
+  const done=db.tasks.filter(t=>t.done);
+  const all=[...active,...done];
+  document.getElementById('taskList').innerHTML = all.length ? all.map(t=>{
+    const age=taskAgeDays(t);
+    const isPinned=(db.pinned||[]).includes(t.id);
+    const agingBadge=(!t.done && age>=5) ? `<span class="pill" style="background:#fffbeb;color:var(--warn)">⏳ ${age}d old</span>` : '';
+    return `
+    <div class="task ${t.done?'done':''}">
+      <input type="checkbox" ${t.done?'checked':''} onchange="toggleTask(${t.id})">
+      <span class="tasktext" style="flex:1">${esc(t.text)}</span>
+      <span class="pill">${t.priority}</span>
+      ${agingBadge}
+      <button class="btn ghost" title="Pin to Big 3" onclick="togglePin(${t.id})">${isPinned?'📌':'📍'}</button>
+      <button class="btn ghost" title="Move to tomorrow" onclick="snoozeTask(${t.id})">⏭</button>
+      <input type="date" class="input" style="width:150px" value="${t.day}" onchange="rescheduleTask(${t.id}, this.value)">
+      <button class="btn danger" onclick="deleteTask(${t.id})">×</button>
+    </div>`;
+  }).join('') : '<div class="empty">No tasks yet. Add the next concrete action.</div>';
+
+  const big3=getBig3();
+  document.getElementById('big3').innerHTML = big3.length ? big3.map(t=>`
+    <div class="task ${t.done?'done':''}">
+      <input type="checkbox" onchange="toggleTask(${t.id})">
+      <span class="tasktext">${esc(t.text)}</span>
+      ${(db.pinned||[]).includes(t.id) ? '<span class="pill">📌 pinned</span>' : ''}
+    </div>`).join('') : '<div class="empty">Add your first Big 3 task below, or pin tasks in the Master List.</div>';
+}
+
+/* ---------- brain dump ---------- */
+function addBrainItem(){
+  const el=document.getElementById('brainInput');
+  const v=el.value.trim();
+  if(!v) return;
+  db.brainDump.push({id:Date.now(),text:v,created:todayKey()});
+  el.value='';
+  save(); render();
+}
+function brainDump(){
+  const v=prompt("Brain dump — write it down and get it out of your head:");
+  if(v && v.trim()){
+    db.brainDump.push({id:Date.now(),text:v.trim(),created:todayKey()});
+    save(); render(); toast('Captured');
+  }
+}
+function convertBrainItem(id){
+  const item=db.brainDump.find(x=>x.id===id);
+  if(!item) return;
+  const k=todayKey();
+  db.tasks.push({id:Date.now(),text:item.text,priority:'normal',done:false,created:k,day:k});
+  db.brainDump=db.brainDump.filter(x=>x.id!==id);
+  save(); render(); toast('Moved to tasks');
+}
+function deleteBrainItem(id){
+  const idx=db.brainDump.findIndex(x=>x.id===id);
+  if(idx===-1) return;
+  const removed=db.brainDump[idx];
+  db.brainDump.splice(idx,1);
+  save(); render();
+  toast('Brain dump item deleted', ()=>{ db.brainDump.splice(idx,0,removed); save(); render(); });
+}
+
+function renderBrainDump(){
+  const list=[...db.brainDump].sort((a,b)=>b.id-a.id);
+  document.getElementById('brainList').innerHTML = list.length ? list.map(item=>`
+    <div class="brainItem">
+      <span style="flex:1">${esc(item.text)}</span>
+      <span class="muted">${item.created}</span>
+      <button class="btn secondary" onclick="convertBrainItem(${item.id})">→ Task</button>
+      <button class="btn danger" onclick="deleteBrainItem(${item.id})">×</button>
+    </div>`).join('') : '<div class="empty">Nothing dumped yet. Anything rattling around your head goes here.</div>';
+}
+
+/* ---------- cigarettes ---------- */
+function changeSmoke(n){
+  const d=day();
+  const k=todayKey();
+  if(n>0){
+    d.smoke=(d.smoke||0)+1;
+    if(!db.smokeLogs[k]) db.smokeLogs[k]=[];
+    db.smokeLogs[k].push(new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}));
+    toast('Cigarette logged');
+  } else if((d.smoke||0)>0){
+    d.smoke--;
+    if(db.smokeLogs[k] && db.smokeLogs[k].length) db.smokeLogs[k].pop();
+  }
+  save(); render();
+}
+
+/* ---------- medication ---------- */
+function toggleMed(name){
+  const m=medDay();
+  m[name]=!m[name];
+  save(); render();
+  const label=name.charAt(0).toUpperCase()+name.slice(1);
+  toast(m[name] ? label+' recorded' : label+' record removed');
+}
+function renderMedication(){
+  const m=medDay();
+  const label=(name,icon)=>`
+    <div class="task ${m[name]?'done':''}">
+      <input type="checkbox" ${m[name]?'checked':''} onchange="toggleMed('${name}')">
+      <span class="tasktext">${icon} ${name==='vyvanse'?'Vyvanse':'Felositin'} capsule</span>
+      <span class="pill">${m[name]?'Taken':'Not taken'}</span>
+    </div>`;
+  document.getElementById('medStatus').innerHTML = label('vyvanse','💊')+label('felositin','💊');
+}
+
+/* ---------- streaks ---------- */
+function computeStreak(predicate){
+  let streak=0;
+  let d=new Date();
+  let k=d.toISOString().slice(0,10);
+  if(!predicate(k)){ d.setDate(d.getDate()-1); }
+  while(true){
+    k=d.toISOString().slice(0,10);
+    if(predicate(k)){ streak++; d.setDate(d.getDate()-1); } else break;
+  }
+  return streak;
+}
+function renderStreaks(){
+  const medStreak = computeStreak(k=>{ const m=db.meds[k]; return !!(m && m.vyvanse && m.felositin); });
+  const target = db.settings.smokeTarget || 12;
+  const smokeStreak = computeStreak(k=>{ const d=db.days[k]; return d ? (d.smoke||0) <= target : false; });
+  document.getElementById('medStreakMetric').textContent = medStreak;
+  document.getElementById('smokeStreakMetric').textContent = smokeStreak;
+  document.getElementById('medStreakWrap').style.display = db.settings.level2.medication ? '' : 'none';
+}
+
+/* ---------- sliders / daily state ---------- */
+function liveSlider(name){
+  const el=document.getElementById(name);
+  if(!el) return;
+  const v=+el.value;
+  const lbl=document.getElementById(name+'Val');
+  if(lbl) lbl.textContent=v;
+  day()[name]=v;
+  save();
+}
+function saveState(){
+  const d=day();
+  ['energy','focus','mood','stress'].forEach(x=>{
+    const el=document.getElementById(x);
+    if(el) d[x]=+el.value;
+  });
+  const sleepEl=document.getElementById('sleep');
+  if(sleepEl) d.sleep=sleepEl.value;
+  save(); render(); toast('Saved');
+}
+function saveSmokeTarget(val){
+  const n=+val;
+  db.settings.smokeTarget = (n>0) ? n : 12;
+  save(); render(); toast('Cigarette target updated');
+}
+
+/* ---------- level 2 optional trackers ---------- */
+function toggleLevel2(key){
+  db.settings.level2[key]=!db.settings.level2[key];
+  save(); render();
+}
+function saveExtra(key,val){
+  day()[key]=val===''?'':+val;
+  save(); render();
+}
+const OPTIONAL_FIELDS=[
+  {key:'exercise',label:'Exercise',unit:'min'},
+  {key:'screenTime',label:'Screen time',unit:'hrs'},
+  {key:'gaming',label:'Gaming',unit:'hrs'},
+  {key:'caffeine',label:'Caffeine',unit:'cups'}
+];
+function renderOptionalToday(){
+  const d=day();
+  const enabled=OPTIONAL_FIELDS.filter(f=>db.settings.level2[f.key]);
+  const box=document.getElementById('optionalCard');
+  if(!enabled.length){ box.style.display='none'; return; }
+  box.style.display='';
+  document.getElementById('optionalToday').innerHTML = enabled.map(f=>`
+    <div class="optRow">
+      <label>${esc(f.label)}</label>
+      <input type="number" min="0" class="input" placeholder="${f.unit}" value="${d[f.key]===''||d[f.key]===undefined?'':d[f.key]}" onchange="saveExtra('${f.key}', this.value)">
+    </div>`).join('');
+}
+
+/* ---------- experiments (level 3) ---------- */
+function addExperiment(){
+  const nameEl=document.getElementById('expName');
+  const name=nameEl.value.trim();
+  if(!name) return;
+  const type=document.getElementById('expType').value;
+  const unitEl=document.getElementById('expUnit');
+  db.experiments.push({
+    id:Date.now(), name, type,
+    unit: type==='number' ? (unitEl.value.trim()||'units') : '',
+    startDate: todayKey(), active:true, entries:{}, snoozedUntil:null
+  });
+  nameEl.value='';
+  unitEl.value='';
+  save(); render(); toast('Experiment added');
+}
+function logExperiment(id,val){
+  const ex=db.experiments.find(e=>e.id===id);
+  if(!ex) return;
+  ex.entries[todayKey()]=val;
+  save(); render();
+}
+function archiveExperiment(id){
+  const ex=db.experiments.find(e=>e.id===id);
+  if(!ex) return;
+  ex.active=false;
+  save(); render(); toast('Experiment archived');
+}
+function snoozeExperiment(id){
+  const ex=db.experiments.find(e=>e.id===id);
+  if(!ex) return;
+  const d=new Date();
+  d.setDate(d.getDate()+7);
+  ex.snoozedUntil=d.toISOString().slice(0,10);
+  save(); render(); toast('Checking back in 7 days');
+}
+function reactivateExperiment(id){
+  const ex=db.experiments.find(e=>e.id===id);
+  if(!ex) return;
+  ex.active=true; ex.startDate=todayKey(); ex.snoozedUntil=null;
+  save(); render(); toast('Experiment restarted');
+}
+function deleteExperiment(id){
+  const idx=db.experiments.findIndex(e=>e.id===id);
+  if(idx===-1) return;
+  const removed=db.experiments[idx];
+  db.experiments.splice(idx,1);
+  save(); render();
+  toast('Experiment deleted', ()=>{ db.experiments.splice(idx,0,removed); save(); render(); });
+}
+function daysElapsed(ex){
+  return Math.floor((new Date(todayKey())-new Date(ex.startDate))/86400000)+1;
+}
+function needsReview(ex){
+  return ex.active && daysElapsed(ex)>=14 && (!ex.snoozedUntil || ex.snoozedUntil<=todayKey());
+}
+
+function renderExperiments(){
+  const active=db.experiments.filter(e=>e.active);
+  const archived=db.experiments.filter(e=>!e.active);
+
+  document.getElementById('expActiveList').innerHTML = active.length ? active.map(ex=>{
+    const val=ex.entries[todayKey()];
+    const control = ex.type==='bool'
+      ? `<label style="display:flex;align-items:center;gap:8px"><input type="checkbox" ${val?'checked':''} onchange="logExperiment(${ex.id}, this.checked)"> Done today</label>`
+      : `<input type="number" class="input" style="width:120px" placeholder="${esc(ex.unit)}" value="${val===undefined?'':val}" onchange="logExperiment(${ex.id}, +this.value)">`;
+    return `
+    <div class="expCard">
+      <div class="expTop">
+        <div><b>${esc(ex.name)}</b> <span class="lvl lvl3">Day ${daysElapsed(ex)}</span></div>
+        <div class="actions">${control}<button class="btn danger" onclick="archiveExperiment(${ex.id})">Archive</button></div>
+      </div>
+      ${needsReview(ex) ? `
+        <div class="reviewBanner">
+          It's been ${daysElapsed(ex)} days. Worth reviewing: is this worth keeping?
+          <div class="actions" style="margin-top:8px">
+            <button class="btn secondary" onclick="snoozeExperiment(${ex.id})">Keep tracking 7 more days</button>
+            <button class="btn danger" onclick="archiveExperiment(${ex.id})">Archive it</button>
+          </div>
+        </div>` : ''}
+    </div>`;
+  }).join('') : '<div class="empty">No active experiments. Add one above — pick something small and curious.</div>';
+
+  document.getElementById('expArchivedList').innerHTML = archived.length ? archived.map(ex=>`
+    <div class="expCard">
+      <div class="expTop">
+        <div><b>${esc(ex.name)}</b> <span class="muted">started ${ex.startDate}</span></div>
+        <div class="actions">
+          <button class="btn secondary" onclick="reactivateExperiment(${ex.id})">Restart</button>
+          <button class="btn danger" onclick="deleteExperiment(${ex.id})">Delete</button>
+        </div>
+      </div>
+    </div>`).join('') : '<div class="empty">Nothing archived yet.</div>';
+}
+
+function renderExpToday(){
+  const active=db.experiments.filter(e=>e.active);
+  const box=document.getElementById('expTodayCard');
+  if(!active.length){ box.style.display='none'; return; }
+  box.style.display='';
+  document.getElementById('expToday').innerHTML = active.map(ex=>{
+    const val=ex.entries[todayKey()];
+    const control = ex.type==='bool'
+      ? `<label style="display:flex;align-items:center;gap:8px"><input type="checkbox" ${val?'checked':''} onchange="logExperiment(${ex.id}, this.checked)"> Done</label>`
+      : `<input type="number" class="input" style="width:110px" placeholder="${esc(ex.unit)}" value="${val===undefined?'':val}" onchange="logExperiment(${ex.id}, +this.value)">`;
+    return `<div class="optRow"><label style="width:150px">${esc(ex.name)}</label>${control}</div>`;
+  }).join('');
+}
+
+/* ---------- focus mode ---------- */
+let focusTaskId=null;
+function openFocus(){
+  const active=db.tasks.filter(t=>!t.done);
+  const big3=getBig3();
+  if(!focusTaskId || !active.find(t=>t.id===focusTaskId)){
+    focusTaskId = big3.length ? big3[0].id : (active.length ? active[0].id : null);
+  }
+  renderFocus();
+  document.getElementById('focusOverlay').style.display='flex';
+}
+function closeFocus(){ document.getElementById('focusOverlay').style.display='none'; }
+function setFocusTask(id){ focusTaskId=+id; renderFocus(); }
+function completeFocusTask(){
+  if(focusTaskId){ toggleTask(focusTaskId); }
+  const active=db.tasks.filter(t=>!t.done);
+  focusTaskId = active.length ? active[0].id : null;
+  renderFocus();
+}
+function renderFocus(){
+  const active=db.tasks.filter(t=>!t.done);
+  const sel=document.getElementById('focusTaskSelect');
+  sel.innerHTML = active.length
+    ? active.map(t=>`<option value="${t.id}" ${t.id===focusTaskId?'selected':''}>${esc(t.text)}</option>`).join('')
+    : '<option value="">No open tasks — add one first</option>';
+  const current = active.find(t=>t.id===focusTaskId) || active[0];
+  document.getElementById('focusTaskText').textContent = current ? current.text : 'Nothing queued — add a task';
+}
+
+/* ---------- timer ---------- */
+let remaining=3000, timerId=null;
+function updateTimerDisplay(){
+  const text = Math.floor(remaining/60).toString().padStart(2,'0')+':'+(remaining%60).toString().padStart(2,'0');
+  document.getElementById('timer').textContent = text;
+  document.getElementById('focusTimer').textContent = text;
+}
+function startTimer(){
+  if(timerId) return;
+  timerId=setInterval(()=>{
+    remaining--;
+    updateTimerDisplay();
+    if(remaining<=0){
+      clearInterval(timerId); timerId=null;
+      completeBlock();
+      toast('Sprint complete — take a break!');
+      resetTimer();
+    }
+  },1000);
+}
+function pauseTimer(){ clearInterval(timerId); timerId=null; }
+function resetTimer(){ clearInterval(timerId); timerId=null; remaining=3000; updateTimerDisplay(); }
+function completeBlock(){ day().blocks=(day().blocks||0)+1; save(); render(); }
+
+/* ---------- weekly planner ---------- */
+function renderWeek(){
+  const base=new Date();
+  const monday=new Date(base);
+  const dayN=(base.getDay()+6)%7;
+  monday.setDate(base.getDate()-dayN);
+  const names=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  document.getElementById('weekGrid').innerHTML = names.map((n,i)=>{
+    const d=new Date(monday); d.setDate(monday.getDate()+i);
+    const k=d.toISOString().slice(0,10);
+    const dd=db.days[k];
+    const tasks=db.tasks.filter(t=>t.day===k);
+    const meds=db.meds[k];
+    let extra='';
+    if(dd){
+      extra += `<div class="block">🚬 ${dd.smoke||0} · 🎯 ${dd.focus}/10 · 😴 ${dd.sleep||'—'}h</div>`;
+      const bits=[];
+      if(db.settings.level2.exercise && dd.exercise!=='') bits.push('🏃 '+dd.exercise+'m');
+      if(db.settings.level2.screenTime && dd.screenTime!=='') bits.push('📱 '+dd.screenTime+'h');
+      if(db.settings.level2.gaming && dd.gaming!=='') bits.push('🎮 '+dd.gaming+'h');
+      if(db.settings.level2.caffeine && dd.caffeine!=='') bits.push('☕ '+dd.caffeine);
+      if(bits.length) extra += `<div class="block">${bits.join(' · ')}</div>`;
+    }
+    if(db.settings.level2.medication && meds) extra += `<div class="block">💊 V ${meds.vyvanse?'✓':'—'} · F ${meds.felositin?'✓':'—'}</div>`;
+    return `<div class="day">
+      <strong>${n}</strong><small>${d.getDate()}/${d.getMonth()+1}</small>
+      ${tasks.length ? tasks.map(t=>`<div class="block">${t.done?'☑':'☐'} ${esc(t.text)}</div>`).join('') : '<div class="empty">No tasks</div>'}
+      ${extra}
+    </div>`;
+  }).join('');
+}
+
+/* ---------- tracker / analytics ---------- */
+function last7Keys(){
+  const keys=[];
+  for(let i=6;i>=0;i--){
+    const d=new Date(); d.setDate(d.getDate()-i);
+    keys.push(d.toISOString().slice(0,10));
+  }
+  return keys;
+}
+function renderTracker(){
+  const keys=last7Keys();
+
+  document.getElementById('smokeChart').innerHTML = keys.map(k=>{
+    const v=db.days[k]?.smoke||0;
+    return `<div class="col"><i style="height:${Math.max(3,v*10)}px"></i><span>${k.slice(5)}</span><b>${v}</b></div>`;
+  }).join('');
+
+  const vals=keys.map(k=>db.days[k]).filter(Boolean);
+  const avg=x=>vals.length?(vals.reduce((a,d)=>a+(+d[x]||0),0)/vals.length).toFixed(1):'0';
+  let stateRows=`<tr><th>Metric</th><th>Avg</th></tr><tr><td>Energy</td><td>${avg('energy')}/10</td></tr><tr><td>Focus</td><td>${avg('focus')}/10</td></tr>`;
+  if(db.settings.level2.mood) stateRows+=`<tr><td>Mood</td><td>${avg('mood')}/10</td></tr>`;
+  if(db.settings.level2.stress) stateRows+=`<tr><td>Stress</td><td>${avg('stress')}/10</td></tr>`;
+  document.getElementById('stateTable').innerHTML=`<table>${stateRows}</table>`;
+
+  const medCardT=document.getElementById('medHistoryCard');
+  if(db.settings.level2.medication){
+    medCardT.style.display='';
+    document.getElementById('medHistory').innerHTML = `<table>
+      <tr><th>Date</th><th>Vyvanse</th><th>Felositin</th></tr>
+      ${keys.map(k=>{ const m=db.meds[k]||{}; return `<tr><td>${k}</td><td>${m.vyvanse?'✓':'—'}</td><td>${m.felositin?'✓':'—'}</td></tr>`; }).join('')}
+    </table>`;
+  } else { medCardT.style.display='none'; }
+
+  const optStatsCard=document.getElementById('optionalStatsCard');
+  const enabledFields=OPTIONAL_FIELDS.filter(f=>db.settings.level2[f.key]);
+  if(enabledFields.length){
+    optStatsCard.style.display='';
+    document.getElementById('optionalStats').innerHTML=`<table>
+      <tr><th>Tracker</th><th>7-day avg</th></tr>
+      ${enabledFields.map(f=>`<tr><td>${esc(f.label)}</td><td>${avg(f.key)} ${f.unit}</td></tr>`).join('')}
+    </table>`;
+  } else { optStatsCard.style.display='none'; }
+
+  const expStatsCard=document.getElementById('expStatsCard');
+  if(db.experiments.length){
+    expStatsCard.style.display='';
+    document.getElementById('expStats').innerHTML = db.experiments.map(ex=>{
+      const loggedDays=keys.filter(k=>ex.entries[k]!==undefined);
+      let summary;
+      if(ex.type==='bool'){
+        const doneDays=loggedDays.filter(k=>ex.entries[k]).length;
+        summary=doneDays+'/7 days done';
+      } else {
+        const numVals=loggedDays.map(k=>+ex.entries[k]||0);
+        const a=numVals.length?(numVals.reduce((x,y)=>x+y,0)/numVals.length).toFixed(1):'0';
+        summary='avg '+a+' '+ex.unit+'/day';
+      }
+      return `<div class="settingsRow"><div><div class="label">${esc(ex.name)} ${ex.active?'':'<span class="muted">(archived)</span>'}</div><div class="muted">${summary}</div></div></div>`;
+    }).join('');
+  } else { expStatsCard.style.display='none'; }
+
+  const logs=db.smokeLogs[todayKey()]||[];
+  document.getElementById('smokeLog').innerHTML = logs.length
+    ? logs.map((x,i)=>`<span class="pill" style="margin:3px;display:inline-block">🚬 ${i+1} · ${x}</span>`).join('')
+    : '<div class="empty">No cigarettes logged individually today.</div>';
+
+  renderInsights();
+}
+
+function splitAvg(keys, field){
+  const nums=keys.map(k=>+db.days[k][field]).filter(v=>!isNaN(v));
+  return nums.length ? nums.reduce((a,b)=>a+b,0)/nums.length : null;
+}
+function buildInsights(){
+  const keys=Object.keys(db.days);
+  const insights=[];
+  if(keys.length<6) return insights;
+
+  const withSleep=keys.filter(k=>db.days[k].sleep!=='' && db.days[k].sleep!=null && !isNaN(+db.days[k].sleep));
+  const highSleep=withSleep.filter(k=>+db.days[k].sleep>=7);
+  const lowSleep=withSleep.filter(k=>+db.days[k].sleep<7);
+  if(highSleep.length>=2 && lowSleep.length>=2){
+    insights.push(`On days you slept 7+ hours, focus averaged ${splitAvg(highSleep,'focus').toFixed(1)}/10, vs ${splitAvg(lowSleep,'focus').toFixed(1)}/10 on less sleep.`);
+  }
+
+  if(db.settings.level2.medication){
+    const taken=keys.filter(k=>db.meds[k] && db.meds[k].vyvanse);
+    const notTaken=keys.filter(k=>!(db.meds[k] && db.meds[k].vyvanse));
+    if(taken.length>=2 && notTaken.length>=2){
+      insights.push(`Focus averaged ${splitAvg(taken,'focus').toFixed(1)}/10 on days Vyvanse was taken, vs ${splitAvg(notTaken,'focus').toFixed(1)}/10 on days it wasn't.`);
+    }
+  }
+
+  if(db.settings.level2.exercise && db.settings.level2.mood){
+    const withEx=keys.filter(k=>db.days[k].exercise!=='' && +db.days[k].exercise>0);
+    const withoutEx=keys.filter(k=>!(db.days[k].exercise!=='' && +db.days[k].exercise>0));
+    if(withEx.length>=2 && withoutEx.length>=2){
+      insights.push(`Mood averaged ${splitAvg(withEx,'mood').toFixed(1)}/10 on days with exercise logged, vs ${splitAvg(withoutEx,'mood').toFixed(1)}/10 on days without.`);
+    }
+  }
+
+  if(db.settings.level2.caffeine && db.settings.level2.stress){
+    const withCaf=keys.filter(k=>db.days[k].caffeine!=='' && +db.days[k].caffeine>=3);
+    const withoutCaf=keys.filter(k=>!(db.days[k].caffeine!=='' && +db.days[k].caffeine>=3));
+    if(withCaf.length>=2 && withoutCaf.length>=2){
+      insights.push(`Stress averaged ${splitAvg(withCaf,'stress').toFixed(1)}/10 on 3+ cup caffeine days, vs ${splitAvg(withoutCaf,'stress').toFixed(1)}/10 on lighter days.`);
+    }
+  }
+
+  if(db.settings.level2.stress){
+    const target=db.settings.smokeTarget||12;
+    const highSmoke=keys.filter(k=>(db.days[k].smoke||0) > target);
+    const lowSmoke=keys.filter(k=>(db.days[k].smoke||0) <= target);
+    if(highSmoke.length>=2 && lowSmoke.length>=2){
+      insights.push(`Stress averaged ${splitAvg(highSmoke,'stress').toFixed(1)}/10 on days over your cigarette target, vs ${splitAvg(lowSmoke,'stress').toFixed(1)}/10 on days under it.`);
+    }
+  }
+
+  return insights;
+}
+function renderInsights(){
+  const insights=buildInsights();
+  document.getElementById('insightsList').innerHTML = insights.length
+    ? insights.map(i=>`<div class="insight">${esc(i)}</div>`).join('')
+    : '<div class="empty">Log a week or two of days and this will start surfacing patterns automatically.</div>';
+}
+
+/* ---------- review ---------- */
+function renderReview(){
+  const total=db.tasks.length, done=db.tasks.filter(t=>t.done).length;
+  document.getElementById('completionRate').textContent = total ? Math.round(done/total*100)+'%' : '0%';
+  const keys=last7Keys();
+  const smokeVals=keys.map(k=>db.days[k]?.smoke||0);
+  document.getElementById('weeklySmoke').textContent = (smokeVals.reduce((a,b)=>a+b,0)/7).toFixed(1);
+  document.getElementById('weeklyBlocks').textContent = keys.reduce((a,k)=>a+(db.days[k]?.blocks||0),0);
+  const r=db.reviews[todayKey()]||{};
+  document.getElementById('worked').value=r.worked||'';
+  document.getElementById('didnt').value=r.didnt||'';
+  document.getElementById('change').value=r.change||'';
+}
+function saveReview(){
+  db.reviews[todayKey()]={
+    worked:document.getElementById('worked').value,
+    didnt:document.getElementById('didnt').value,
+    change:document.getElementById('change').value
+  };
+  save(); toast('Review saved');
+}
+
+/* ---------- reminders ---------- */
+function requestNotifPermission(){
+  if(!('Notification' in window)){ toast('Notifications are not supported in this browser'); return; }
+  Notification.requestPermission().then(p=>{
+    toast(p==='granted' ? 'Notifications enabled' : 'Notifications blocked');
+  });
+}
+function saveReminderSettings(){
+  db.settings.reminders = db.settings.reminders || {};
+  db.settings.reminders.enabled = document.getElementById('remindersEnabled').checked;
+  db.settings.reminders.dailyLogTime = document.getElementById('dailyLogTime').value || '20:00';
+  db.settings.reminders.medTime = document.getElementById('medReminderTime').value || '09:00';
+  save(); toast('Reminder settings saved');
+}
+let notifiedToday={};
+function checkReminders(){
+  if(!db.settings.reminders || !db.settings.reminders.enabled) return;
+  if(!('Notification' in window) || Notification.permission!=='granted') return;
+  const now=new Date();
+  const hhmm=now.toTimeString().slice(0,5);
+  const k=todayKey();
+  if(db.settings.reminders.dailyLogTime===hhmm && notifiedToday[k+'-log']!==true){
+    new Notification('ADHD OS', {body:"Time to log today's state — energy, focus, sleep."});
+    notifiedToday[k+'-log']=true;
+  }
+  if(db.settings.level2.medication && db.settings.reminders.medTime===hhmm && notifiedToday[k+'-med']!==true){
+    new Notification('ADHD OS', {body:'Reminder: log your medication for today.'});
+    notifiedToday[k+'-med']=true;
+  }
+}
+setInterval(checkReminders, 30000);
+
+/* ---------- settings ---------- */
+function renderSettingsToggles(){
+  Object.keys(db.settings.level2).forEach(key=>{
+    const el=document.getElementById('toggle-'+key);
+    if(el) el.checked=db.settings.level2[key];
+  });
+  document.getElementById('importV1Btn').style.display = localStorage.getItem('adhd_os_v1') ? '' : 'none';
+  document.getElementById('smokeTargetInput').value = db.settings.smokeTarget || 12;
+  const r=db.settings.reminders||{enabled:false,dailyLogTime:'20:00',medTime:'09:00'};
+  document.getElementById('remindersEnabled').checked = !!r.enabled;
+  document.getElementById('dailyLogTime').value = r.dailyLogTime || '20:00';
+  document.getElementById('medReminderTime').value = r.medTime || '09:00';
+}
+
+/* ---------- data: backup / restore / sync / csv ---------- */
+function exportData(){
+  const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download='adhd-os-backup-'+todayKey()+'.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Backup downloaded');
+}
+function importData(evt){
+  const file=evt.target.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const parsed=JSON.parse(e.target.result);
+      db=normalize(parsed);
+      save(); render(); toast('Data imported');
+    }catch(err){ toast('That file could not be read'); }
+  };
+  reader.readAsText(file);
+  evt.target.value='';
+}
+function importV1(){
+  const raw=localStorage.getItem('adhd_os_v1');
+  if(!raw){ toast('No previous-version data found'); return; }
+  try{
+    const v1=JSON.parse(raw);
+    db.tasks=[...db.tasks, ...(v1.tasks||[]).map(t=>({...t, day:t.day||t.created||todayKey()}))];
+    Object.assign(db.days, v1.days||{});
+    Object.assign(db.meds, v1.meds||{});
+    Object.assign(db.smokeLogs, v1.smokeLogs||{});
+    Object.assign(db.reviews, v1.reviews||{});
+    save(); render(); toast('Previous data imported');
+  }catch(e){ toast('Could not import previous data'); }
+}
+function resetAll(){
+  if(confirm('This permanently deletes everything stored in this browser for ADHD OS. Continue?')){
+    localStorage.removeItem(KEY);
+    db=normalize({});
+    save(); render(); toast('All data cleared');
+  }
+}
+function generateSyncCode(){
+  const code = btoa(unescape(encodeURIComponent(JSON.stringify(db))));
+  const box=document.getElementById('syncCodeBox');
+  box.value = code;
+  box.select();
+  toast('Sync code generated — copy it');
+}
+function applySyncCode(){
+  const raw=document.getElementById('syncCodeInput').value.trim();
+  if(!raw){ toast('Paste a sync code first'); return; }
+  try{
+    const parsed=JSON.parse(decodeURIComponent(escape(atob(raw))));
+    db=normalize(parsed);
+    save(); render(); toast('Synced from code');
+  }catch(e){ toast('That sync code looks invalid'); }
+}
+function exportCSV(){
+  const dateSet=new Set([...Object.keys(db.days), ...Object.keys(db.meds)]);
+  const dates=Array.from(dateSet).sort();
+  const headers=['date','energy','focus','mood','stress','sleep','blocks','smoke','exercise','screenTime','gaming','caffeine','vyvanse','felositin'];
+  const rows=[headers.join(',')];
+  dates.forEach(k=>{
+    const d=db.days[k]||{};
+    const m=db.meds[k]||{};
+    const row=[k,
+      d.energy??'', d.focus??'', d.mood??'', d.stress??'', d.sleep??'', d.blocks??'', d.smoke??'',
+      d.exercise??'', d.screenTime??'', d.gaming??'', d.caffeine??'',
+      m.vyvanse?1:0, m.felositin?1:0
+    ];
+    rows.push(row.join(','));
+  });
+  const blob=new Blob([rows.join('\n')], {type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download='adhd-os-data-'+todayKey()+'.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('CSV exported');
+}
+
+/* ---------- master render ---------- */
+function render(){
+  renderDate();
+  const d=day();
+  ['energy','focus','mood','stress'].forEach(x=>{
+    const el=document.getElementById(x);
+    if(el){ el.value=d[x]; document.getElementById(x+'Val').textContent=d[x]; }
+  });
+  document.getElementById('sleep').value = d.sleep || '';
+  document.getElementById('energyMetric').textContent = d.energy+'/10';
+  document.getElementById('focusMetric').textContent = d.focus+'/10';
+  document.getElementById('sleepMetric').textContent = d.sleep ? d.sleep+'h' : '—';
+  document.getElementById('blocksMetric').textContent = d.blocks || 0;
+  document.getElementById('smokeCount').textContent = d.smoke || 0;
+  document.getElementById('smokeTargetText').textContent = db.settings.smokeTarget || 12;
+  document.getElementById('smokeBar').style.width = Math.min((d.smoke/(db.settings.smokeTarget||12))*100,100)+'%';
+
+  document.getElementById('medCard').style.display = db.settings.level2.medication ? '' : 'none';
+  document.getElementById('sliderRow-mood').style.display = db.settings.level2.mood ? '' : 'none';
+  document.getElementById('sliderRow-stress').style.display = db.settings.level2.stress ? '' : 'none';
+
+  renderTasks();
+  renderBrainDump();
+  renderWeek();
+  renderTracker();
+  renderReview();
+  renderMedication();
+  renderStreaks();
+  renderOptionalToday();
+  renderExpToday();
+  renderExperiments();
+  renderFocus();
+  renderSettingsToggles();
+  updateTimerDisplay();
+}
+
+/* ---------- nav ---------- */
+document.querySelectorAll('.nav button').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+    document.getElementById(b.dataset.view).classList.add('active');
+    document.getElementById('title').textContent = b.textContent.replace(/^\S+\s*/,'');
+  };
+});
+
+/* ---------- global keyboard shortcut ---------- */
+document.addEventListener('keydown', e=>{
+  const tag=(e.target.tagName||'').toLowerCase();
+  if(tag==='input'||tag==='textarea'||tag==='select') return;
+  if(e.metaKey||e.ctrlKey||e.altKey) return;
+  if(e.key==='b' || e.key==='B'){ e.preventDefault(); brainDump(); }
+});
+
+/* ---------- PWA service worker registration (only works when hosted, not from a local file) ---------- */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+
+render();
+</script>
+</body>
+</html>
