@@ -18,7 +18,7 @@ A cute, local-first ADHD planning app that helps you track tasks, energy, medica
 
 ## Quick Start
 
-1. Open `adhd_os.html` in your browser, or host the folder for PWA features
+1. Open `Focusberry.html` in your browser, or host the folder for PWA features
 2. Start logging today's energy, focus, and tasks
 3. Click any day in the week view to edit past days
 4. Configure Google sign-in in Settings, then sign in with your Google account
@@ -43,7 +43,7 @@ This browser-button flow does not use a redirect URI. Do not create or distribut
 
 ### Enable sign-in in Focusberry
 
-1. Host the folder over HTTP or HTTPS. Opening `adhd_os.html` as a `file://` URL will not satisfy Google’s origin checks or enable the PWA service worker. For a quick local server, run `python3 -m http.server 8000` from this folder.
+1. Host the folder over HTTP or HTTPS. Opening `Focusberry.html` as a `file://` URL will not satisfy Google’s origin checks or enable the PWA service worker. For a quick local server, run `python3 -m http.server 8000` from this folder.
 2. Open the app and go to **Settings → Google sign-in**.
 3. Paste the web client ID and choose **Save client ID**.
 4. Use the Google button in the header or Settings to sign in.
