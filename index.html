@@ -441,6 +441,13 @@ th,td{text-align:left;padding:10px;border-bottom:1px solid var(--line)}
 
 <div class="toast" id="toast"></div>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script>
+if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js");
+    });
+}
+</script>
 <script>
 const APP_NAME='Focusberry';
 const KEY='focusberry_v1';
