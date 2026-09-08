@@ -18,10 +18,50 @@ A cute, local-first ADHD planning app that helps you track tasks, energy, medica
 
 ## Quick Start
 
-1. Open `Focusberry.html` in your browser, or host the folder for PWA features
-2. Start logging today's energy, focus, and tasks
-3. Open Calendar and select any day to add or edit a daily log; past logs can also be deleted
-4. Configure Google sign-in in Settings, then sign in with your Google account
+1. Open `index.html` in your browser, or host the folder for PWA features.
+2. Start logging today's energy, focus, and tasks.
+3. Open Calendar and select any day to add or edit a daily log; past logs can also be deleted.
+4. Configure Google sign-in in Settings, then sign in with your Google account.
+
+## Build the macOS app locally
+
+The macOS wrapper is designed to be built on an Apple Silicon MacBook. GitHub Actions is **manual-only** so normal pushes do not trigger the macOS runner.
+
+### Requirements
+
+- macOS 13 or newer
+- Apple Silicon Mac (the build targets `arm64`)
+- Xcode Command Line Tools (`xcode-select --install`)
+- Git
+
+### Build
+
+From the repository root:
+
+```bash
+bash scripts/build-macos.sh
+```
+
+The script creates:
+
+```text
+build/Focusberry.app
+build/Focusberry.dmg
+```
+
+Launch the app directly with:
+
+```bash
+open build/Focusberry.app
+```
+
+Or open the installer image:
+
+```bash
+open build/Focusberry.dmg
+```
+
+The build uses an ad-hoc code signature. This is suitable for local testing; a future public release should use an Apple Developer ID signature and notarization.
 
 ## Configure Google OAuth 2.0 / OpenID Connect
 
@@ -43,7 +83,7 @@ This browser-button flow does not use a redirect URI. Do not create or distribut
 
 ### Enable sign-in in Focusberry
 
-1. Host the folder over HTTP or HTTPS. Opening `Focusberry.html` as a `file://` URL will not satisfy Google’s origin checks or enable the PWA service worker. For a quick local server, run `python3 -m http.server 8000` from this folder.
+1. Host the folder over HTTP or HTTPS. Opening `index.html` as a `file://` URL will not satisfy Google’s origin checks or enable the PWA service worker. For a quick local server, run `python3 -m http.server 8000` from this folder.
 2. Open the app and go to **Settings → Google sign-in**.
 3. Paste the web client ID and choose **Save client ID**.
 4. Use the Google button in the header or Settings to sign in.
