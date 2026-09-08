@@ -23,8 +23,8 @@ struct FocusberryWebView: NSViewRepresentable {
         webView.navigationDelegate = context.coordinator
         webView.uiDelegate = context.coordinator
 
-        guard let url = Bundle.main.url(forResource: "Focusberry", withExtension: "html") else {
-            webView.loadHTMLString("<h1>Focusberry.html was not bundled.</h1>", baseURL: nil)
+        guard let url = Bundle.main.url(forResource: "index", withExtension: "html") else {
+            webView.loadHTMLString("<h1>Focusberry index.html was not bundled.</h1>", baseURL: nil)
             return webView
         }
 
