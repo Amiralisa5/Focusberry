@@ -1,0 +1,1 @@
+This repository uses index.html as the PWA entry point. The cloud sync page is optional and requires a deployed API server.
