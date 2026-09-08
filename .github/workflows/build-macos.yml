@@ -25,6 +25,7 @@ jobs:
           cp Focusberry.html build/Focusberry.app/Contents/Resources/Focusberry.html
           cp manifest.json build/Focusberry.app/Contents/Resources/manifest.json
           cp sw.js build/Focusberry.app/Contents/Resources/sw.js
+          cp assets/focusberry-icon.png build/Focusberry.app/Contents/Resources/focusberry-icon.png
           cat > build/Focusberry.app/Contents/Info.plist <<'PLIST'
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -32,12 +33,13 @@ jobs:
           <dict>
               <key>CFBundleDisplayName</key><string>Focusberry</string>
               <key>CFBundleExecutable</key><string>Focusberry</string>
+              <key>CFBundleIconFile</key><string>focusberry-icon.png</string>
               <key>CFBundleIdentifier</key><string>com.amiralisa5.focusberry</string>
               <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
               <key>CFBundleName</key><string>Focusberry</string>
               <key>CFBundlePackageType</key><string>APPL</string>
               <key>CFBundleShortVersionString</key><string>0.1.0</string>
-              <key>CFBundleVersion</key><string>1</string>
+              <key>CFBundleVersion</key><string>2</string>
               <key>LSMinimumSystemVersion</key><string>13.0</string>
               <key>NSHighResolutionCapable</key><true/>
           </dict>
@@ -58,6 +60,7 @@ jobs:
         run: |
           set -euo pipefail
           test -x build/Focusberry.app/Contents/MacOS/Focusberry
+          test -f build/Focusberry.app/Contents/Resources/focusberry-icon.png
           test -f build/Focusberry.dmg
           codesign --verify --deep --strict build/Focusberry.app
           file build/Focusberry.app/Contents/MacOS/Focusberry
