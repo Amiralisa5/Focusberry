@@ -1,8 +1,8 @@
 name: Build Focusberry macOS
 
+# macOS builds are intentionally manual. Focusberry is built locally on an
+# Apple Silicon MacBook, so normal pushes do not consume GitHub Actions runs.
 on:
-  push:
-    branches: [ master ]
   workflow_dispatch:
 
 jobs:
@@ -15,56 +15,7 @@ jobs:
       - name: Build app
         run: |
           set -euo pipefail
-          mkdir -p build/Focusberry.app/Contents/MacOS
-          mkdir -p build/Focusberry.app/Contents/Resources
-          xcrun swiftc macos/Sources/FocusberryMacOS/main.swift \
-            -o build/Focusberry.app/Contents/MacOS/Focusberry \
-            -framework SwiftUI \
-            -framework WebKit \
-            -target arm64-apple-macos13.0
-          cp Focusberry.html build/Focusberry.app/Contents/Resources/Focusberry.html
-          cp manifest.json build/Focusberry.app/Contents/Resources/manifest.json
-          cp sw.js build/Focusberry.app/Contents/Resources/sw.js
-          cp assets/focusberry-icon.png build/Focusberry.app/Contents/Resources/focusberry-icon.png
-          cat > build/Focusberry.app/Contents/Info.plist <<'PLIST'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>CFBundleDisplayName</key><string>Focusberry</string>
-              <key>CFBundleExecutable</key><string>Focusberry</string>
-              <key>CFBundleIconFile</key><string>focusberry-icon.png</string>
-              <key>CFBundleIdentifier</key><string>com.amiralisa5.focusberry</string>
-              <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
-              <key>CFBundleName</key><string>Focusberry</string>
-              <key>CFBundlePackageType</key><string>APPL</string>
-              <key>CFBundleShortVersionString</key><string>0.1.0</string>
-              <key>CFBundleVersion</key><string>2</string>
-              <key>LSMinimumSystemVersion</key><string>13.0</string>
-              <key>NSHighResolutionCapable</key><true/>
-          </dict>
-          </plist>
-          PLIST
-          chmod +x build/Focusberry.app/Contents/MacOS/Focusberry
-          codesign --deep --force --sign - build/Focusberry.app
-
-      - name: Create DMG
-        run: |
-          set -euo pipefail
-          mkdir -p build/dmg-root
-          cp -R build/Focusberry.app build/dmg-root/Focusberry.app
-          ln -s /Applications build/dmg-root/Applications
-          hdiutil create -volname Focusberry -srcfolder build/dmg-root -ov -format UDZO build/Focusberry.dmg
-
-      - name: Verify artifacts
-        run: |
-          set -euo pipefail
-          test -x build/Focusberry.app/Contents/MacOS/Focusberry
-          test -f build/Focusberry.app/Contents/Resources/focusberry-icon.png
-          test -f build/Focusberry.dmg
-          codesign --verify --deep --strict build/Focusberry.app
-          file build/Focusberry.app/Contents/MacOS/Focusberry
-          ls -lh build/Focusberry.dmg
+          bash scripts/build-macos.sh
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
