@@ -1,1 +1,0 @@
-The PWA should launch index.html directly. Cloud sync requires a deployed API and should not be the PWA entry point.
